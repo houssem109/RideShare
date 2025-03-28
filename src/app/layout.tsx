@@ -6,8 +6,9 @@ import { ThemeProvider } from "@/Providers/theme-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Your App",
-  description: "Your app description",
+  title: "RideShare",
+  description: "share your way, share your ride",
+  
 };
 
 export default function RootLayout({
