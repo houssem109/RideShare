@@ -75,16 +75,14 @@ export default async function Signup(props: {
             
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                name="phone"
-                placeholder="+1234567890"
-                type="tel"
-                pattern="^\\+[0-9]{1,15}$"
-                title="Phone number must start with + followed by country code and number"
-                required
-                className="w-full"
-              />
+              <Input 
+  name="phone" 
+  placeholder="+1234567890" 
+  type="tel" 
+  pattern="^\+[0-9]{1,15}$"
+  title="Phone number must start with + followed by country code and number"
+  required 
+/>
               <p className="text-xs text-muted-foreground mt-1">
                 Include country code with + prefix (e.g., +1 for US)
               </p>

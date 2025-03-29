@@ -6,38 +6,122 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export const signUpAction = async (formData: FormData) => {
-  const email = formData.get("email")?.toString();
-  const password = formData.get("password")?.toString();
-  const supabase = await createClient();
-  const origin = (await headers()).get("origin");
+  try {
+    const email = formData.get("email")?.toString();
+    const password = formData.get("password")?.toString();
+    const firstName = formData.get("firstName")?.toString();
+    const lastName = formData.get("lastName")?.toString();
+    const phone = formData.get("phone")?.toString();
+    
+    console.log("Attempting to create Supabase client");
+    const supabase = await createClient();
+    
+    if (!email || !password || !firstName || !lastName || !phone) {
+      return encodedRedirect(
+        "error",
+        "/sign-up",
+        "All fields are required",
+      );
+    }
+    
+    console.log("Phone format being sent:", phone);
+    
+    // Sign up the user
+    const { error, data } = await supabase.auth.signUp({
+      email,
+      password,
+      //phone,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone,
+        },
+        emailRedirectTo: undefined
+      },
+    });
+    
+    console.log("Sign up response:", data);
+    
+    if (error) {
+      console.error("Detailed error:", JSON.stringify(error, null, 2));
+      return encodedRedirect("error", "/sign-up", error.message);
+    } else {
+      return redirect(`/verify-otp?email=${encodeURIComponent(email)}`);
+    }
+  } catch (err) {
+    console.error("Unexpected error during signup:", err);
+    return encodedRedirect("error", "/sign-up", "Unexpected error during signup");
+  }
+};
 
-  if (!email || !password) {
+export const verifyOtpAction = async (formData: FormData) => {
+  const token = formData.get("token")?.toString();
+  const email = formData.get("email")?.toString();
+ // const type = formData.get("type")?.toString();
+  const supabase = await createClient();
+
+  if (!token || !email) {
     return encodedRedirect(
       "error",
-      "/sign-up",
-      "Email and password are required",
+      "/verify-otp",
+      "Email and verification code are required"
     );
   }
 
-  const { error } = await supabase.auth.signUp({
+  // Verify the OTP token
+  const { error } = await supabase.auth.verifyOtp({
     email,
-    password,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback`,
-    },
+    token,
+    type: 'signup' // Using 'signup' for new user registration verification
   });
 
   if (error) {
-    console.error(error.code + " " + error.message);
-    return encodedRedirect("error", "/sign-up", error.message);
-  } else {
+    console.error("OTP verification error:", error.message);
     return encodedRedirect(
-      "success",
-      "/sign-up",
-      "Thanks for signing up! Please check your email for a verification link.",
+      "error",
+      "/verify-otp",
+      error.message
     );
   }
+
+  // If successful, redirect to protected area or login
+  return redirect("/espace-client");
 };
+
+export const resendOtpAction = async (formData: FormData) => {
+  const email = formData.get("email")?.toString();
+  const supabase = await createClient();
+
+  if (!email) {
+    return encodedRedirect(
+      "error",
+      "/verify-otp",
+      "Email is required"
+    );
+  }
+
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: email,
+  });
+
+  if (error) {
+    console.error("Error resending OTP:", error.message);
+    return encodedRedirect(
+      "error",
+      "/verify-otp",
+      error.message
+    );
+  }
+
+  return encodedRedirect(
+    "success",
+    "/verify-otp",
+    "Verification code resent successfully"
+  );
+};
+
 
 export const signInAction = async (formData: FormData) => {
   const email = formData.get("email") as string;
