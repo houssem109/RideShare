@@ -1,190 +1,202 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { registerDriver } from "@/services/driverService";
 import { createClient } from "@/utils/supabase/client";
 
 export default function BecomeDriverPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [isAlreadyDriver, setIsAlreadyDriver] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
+  useEffect(() => {
+    const fetchUserData = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user: supabaseUser }, error: userError } = await supabase.auth.getUser();
 
-      if (!user) {
-        setError("You must be logged in to become a driver");
-        setIsSubmitting(false);
+      if (userError || !supabaseUser) {
+        router.push("/sign-in");
         return;
       }
 
-      // Here you would collect and validate the driver information
-      // This is a placeholder - implement your actual driver registration logic
-      const formData = new FormData(e.currentTarget);
-      const fullName = formData.get("fullName") as string;
-      const licenseNumber = formData.get("licenseNumber") as string;
-      const vehicleModel = formData.get("vehicleModel") as string;
-      const vehicleYear = formData.get("vehicleYear") as string;
+      setUser(supabaseUser);
 
-      if (!fullName || !licenseNumber || !vehicleModel || !vehicleYear) {
-        setError("Please fill in all required fields");
-        setIsSubmitting(false);
+      // Check if profile exists in profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id") // Minimal check for existence
+        .eq("id", supabaseUser.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Error fetching profile:", profileError.message || profileError);
+        setError("Failed to fetch profile data");
         return;
       }
 
-      // 1. First, update user metadata to mark as driver
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { 
-          is_driver: true,
-          driver_info: {
-            license_number: licenseNumber,
-            vehicle_model: vehicleModel,
-            vehicle_year: vehicleYear
-          }
-        }
-      });
-
-      if (updateError) {
-        throw updateError;
+      if (!profile) {
+        // Profile doesn't exist, redirect to sign-in instead of creating
+        router.push("/sign-in");
+        return;
       }
 
-      // 2. Optionally, insert into a drivers table in your database
-      // Replace with your actual database schema
-      const { error: insertError } = await supabase
-        .from('drivers')
-        .insert({
-          user_id: user.id,
-          full_name: fullName,
-          license_number: licenseNumber,
-          vehicle_model: vehicleModel,
-          vehicle_year: vehicleYear,
-          status: 'pending' // You might want to have an approval process
-        });
+      // Check driver status from user_metadata
+      setIsAlreadyDriver(supabaseUser.user_metadata?.role === 'driver');
+    };
 
-      if (insertError) {
-        throw insertError;
-      }
+    fetchUserData();
+  }, [router]);
 
-      setSuccess("Successfully registered as a driver! Redirecting to driver dashboard...");
-      
-      // Redirect to driver dashboard after a delay
-      setTimeout(() => {
-        window.location.href = "/espace-driver";
-      }, 2000);
-
-    } catch (err) {
-      console.error("Error becoming a driver:", err);
-      if (err instanceof Error) {
-        setError(err.message || "Failed to register as a driver. Please try again.");
-      } else {
-        setError("Failed to register as a driver. Please try again.");
-      }
-    } finally {
-      setIsSubmitting(false);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
     }
   };
 
-  return (
-    <div className="container max-w-2xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Become a Driver</h1>
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    
+    const formData = new FormData(e.currentTarget);
+    
+    // Add user ID to form data
+    if (user) {
+      formData.append('user_id', user.id);
+    }
+    
+    try {
+      // 1. Register the driver in the Django backend
+      const response = await registerDriver(formData);
+      console.log('Driver registered successfully:', response);
       
-      {error && (
-        <Alert variant="error" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      // 2. Update only the user's role in Supabase
+      const supabase = createClient();
       
-      {success && (
-        <Alert variant="success" className="mb-6">
-          <AlertDescription>{success}</AlertDescription>
-        </Alert>
-      )}
+      // Update the user's metadata in auth.users
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { role: 'driver' }
+      });
       
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="fullName" className="block text-sm font-medium mb-1">
-            Full Name
-          </label>
-          <input
-            id="fullName"
-            name="fullName"
-            type="text"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="licenseNumber" className="block text-sm font-medium mb-1">
-            Driver&apos;s License Number
-          </label>
-          <input
-            id="licenseNumber"
-            name="licenseNumber"
-            type="text"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-          />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="vehicleModel" className="block text-sm font-medium mb-1">
-              Vehicle Model
-            </label>
-            <input
-              id="vehicleModel"
-              name="vehicleModel"
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="vehicleYear" className="block text-sm font-medium mb-1">
-              Vehicle Year
-            </label>
-            <input
-              id="vehicleYear"
-              name="vehicleYear"
-              type="number"
-              min="1990"
-              max={new Date().getFullYear()}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-            />
-          </div>
-        </div>
-        
-        <div className="pt-4">
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Processing..." : "Submit Application"}
-          </Button>
-        </div>
-      </form>
+      if (metadataError) {
+        throw new Error(`Failed to update user metadata: ${metadataError.message}`);
+      }
       
-      <div className="mt-8 border-t pt-6">
-        <h2 className="text-xl font-semibold mb-4">Benefits of Being a Driver</h2>
-        <ul className="list-disc pl-5 space-y-2">
-          <li>Flexible working hours - drive when you want</li>
-          <li>Competitive earnings - keep more of what you earn</li>
-          <li>Meet new people and explore your city</li>
-          <li>Be your own boss with our driver-friendly platform</li>
-        </ul>
+      // Update the profile 'role' field if needed
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role: 'driver' })
+        .eq('id', user.id);
+      
+      if (profileError) {
+        throw new Error(`Failed to update profile: ${profileError.message}`);
+      }
+      
+      // Redirect to driver dashboard
+      router.push('/espace-driver');
+    } catch (err: any) {
+      console.error('Error registering driver:', err);
+      setError(err.response?.data?.error || err.message || 'Failed to register as driver. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isAlreadyDriver) {
+    return (
+      <div className="flex justify-center items-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">You are already registered as a driver</CardTitle>
+            <CardDescription className="text-center">
+              Access your driver dashboard to manage your rides.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex justify-center">
+            <Button
+              onClick={() => router.push("/espace-driver")}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              Go to Driver Dashboard
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-center items-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold text-center">Become a Driver</CardTitle>
+          <CardDescription className="text-center">
+            Register your vehicle to start earning as a driver.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="marque">Car Model</Label>
+              <Input id="marque" name="marque" placeholder="Toyota Camry, etc." required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="matricule">License Plate Number</Label>
+              <Input id="matricule" name="matricule" placeholder="Enter license plate" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="image">Vehicle Image</Label>
+              <div className="flex items-center gap-4">
+                <Input
+                  id="image"
+                  name="image"
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full"
+                >
+                  Select Image
+                </Button>
+                {previewUrl && (
+                  <div className="relative w-16 h-16 overflow-hidden rounded-md">
+                    <img src={previewUrl} alt="Vehicle preview" className="object-cover w-full h-full" />
+                  </div>
+                )}
+              </div>
+            </div>
+            {error && (
+              <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+            <Button
+              type="submit"
+              className="w-full bg-indigo-600 hover:bg-indigo-700"
+              disabled={isLoading}
+            >
+              {isLoading ? "Registering..." : "Register as Driver"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

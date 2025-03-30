@@ -35,7 +35,7 @@ export default async function VerifyOTP(props: {
             />
           </div>
           
-          <SubmitButton formAction={verifyOtpAction} className="mt-2">
+          <SubmitButton formAction={verifyOtpAction} className="mt-2 bg-indigo-600 text-white hover:bg-indigo-700">
             Verify and Complete Registration
           </SubmitButton>
           

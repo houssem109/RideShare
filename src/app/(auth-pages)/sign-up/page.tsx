@@ -6,6 +6,8 @@ import Link from "next/link";
 import { FormMessage, Message } from "@/components/global/form-message";
 import { SubmitButton } from "@/components/global/submit-button";
 import ShieldCheckIcon from "@/components/svg/ShieldCheckIcon";
+import { PhoneInput } from "./components/phone-input";
+ // Import the PhoneInput component
 
 export default async function Signup(props: {
   searchParams: Promise<Message>;
@@ -72,21 +74,20 @@ export default async function Signup(props: {
                 className="w-full"
               />
             </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input 
-  name="phone" 
-  placeholder="+1234567890" 
-  type="tel" 
-  pattern="^\+[0-9]{1,15}$"
-  title="Phone number must start with + followed by country code and number"
-  required 
-/>
-              <p className="text-xs text-muted-foreground mt-1">
-                Include country code with + prefix (e.g., +1 for US)
-              </p>
-            </div>
+              <Label htmlFor="email">CIN</Label>
+              <Input
+                id="cin"
+                name="cin"
+                placeholder="12345678"
+                type="text"
+                required
+                className="w-full"
+              />
+            </div> 
+            
+            {/* Replace the original phone input with the PhoneInput component */}
+            <PhoneInput name="phone" required />
             
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
