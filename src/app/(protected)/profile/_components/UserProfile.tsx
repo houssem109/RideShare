@@ -251,7 +251,7 @@ export default function UserProfile() {
                     It&apos;s a good idea to use a strong password that you don&apos;t use elsewhere
                   </p>
                   <Button asChild variant="outline" className="gap-2">
-                    <Link href="/protected/reset-password">
+                    <Link href="/reset-password">
                       <KeyIcon size={16} />
                       Change Password
                     </Link>
