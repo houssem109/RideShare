@@ -1,36 +1,133 @@
-import { createClient } from '@/utils/supabase/server';
+"use client";
 
-export default async function EspaceDriverPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+import { useState, ChangeEvent, FormEvent } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/global/submit-button";
+
+export default function TrajetForm() {
+  const [formData, setFormData] = useState({
+    name: "",
+    phonenumber: "",
+    price: "",
+    departure: "",
+    arrival: "",
+    departure_date: "",
+    arrival_date: "",
+    nb_places: "",
+    voiture: "1",
+  });
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "price" || name === "nb_places" ? Number(value) : value,
+    }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    // 🔹 Convertir les dates en format "YYYY-MM-DD"
+    const formattedData = {
+      ...formData,
+      departure_date: formData.departure_date.split("T")[0],
+      arrival_date: formData.arrival_date.split("T")[0],
+      voiture: 1, // 🚗 Assurer que c'est bien un nombre
+    };
+
+    try {
+      const response = await fetch("http://localhost:8000/api/trips/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formattedData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Trajet ajouté avec succès !");
+        setFormData({
+          name: "",
+          phonenumber: "",
+          price: "",
+          departure: "",
+          arrival: "",
+          departure_date: "",
+          arrival_date: "",
+          nb_places: "",
+          voiture: "1",
+        });
+      } else {
+        alert(`Erreur : ${JSON.stringify(data)}`);
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert("Problème de connexion au serveur.");
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="border rounded-lg p-6 bg-white shadow-sm">
-        <h1 className="text-2xl font-bold mb-4">Driver Dashboard</h1>
-        <p className="text-gray-600 mb-4">
-          Welcome to your driver dashboard. Here you can manage your account and view your driving history.
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div className="border rounded-lg p-4 bg-blue-50">
-            <h3 className="font-medium text-lg mb-2">Account Info</h3>
-            <p className="text-sm text-gray-600">Email: {user?.email}</p>
-          </div>
-          
-          <div className="border rounded-lg p-4 bg-green-50">
-            <h3 className="font-medium text-lg mb-2">Trips</h3>
-            <p className="text-sm text-gray-600">You have no recent trips.</p>
-          </div>
-          
-          <div className="border rounded-lg p-4 bg-yellow-50">
-            <h3 className="font-medium text-lg mb-2">Earnings</h3>
-            <p className="text-sm text-gray-600">No earnings to display yet.</p>
-          </div>
-        </div>
-      </div>
+    <div className="flex justify-center items-center min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background to-muted/30">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="space-y-1 flex flex-col items-center pb-8">
+          <CardTitle className="text-2xl font-bold text-center">Ajouter un Trajet</CardTitle>
+          <CardDescription className="text-center">
+            Remplissez les informations pour ajouter un trajet.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <form className="flex flex-col space-y-4" onSubmit={handleSubmit}>
+            {/* 🔹 Champs Individuels */}
+            <div className="space-y-2">
+              <Label htmlFor="name">Nom</Label>
+              <Input type="text" id="name" name="name" value={formData.name} onChange={handleChange} required />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phonenumber">Téléphone</Label>
+              <Input type="text" id="phonenumber" name="phonenumber" value={formData.phonenumber} onChange={handleChange} required />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="departure">Départ</Label>
+              <Input type="text" id="departure" name="departure" value={formData.departure} onChange={handleChange} required />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="arrival">Arrivée</Label>
+              <Input type="text" id="arrival" name="arrival" value={formData.arrival} onChange={handleChange} required />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="departure_date">Date de départ</Label>
+              <Input type="date" id="departure_date" name="departure_date" value={formData.departure_date} onChange={handleChange} required />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="arrival_date">Date d'arrivée</Label>
+              <Input type="date" id="arrival_date" name="arrival_date" value={formData.arrival_date} onChange={handleChange} required />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nb_places">Places disponibles</Label>
+              <Input type="number" id="nb_places" name="nb_places" value={formData.nb_places} onChange={handleChange} required />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Prix</Label>
+              <Input type="number" id="price" name="price" value={formData.price} onChange={handleChange} required />
+            </div>
+
+            <SubmitButton pendingText="Ajout en cours..." className="w-full bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+              Ajouter le Trajet
+            </SubmitButton>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
