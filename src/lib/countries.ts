@@ -1,3 +1,4 @@
+
 // lib/countries.ts
  
 export interface Country {
@@ -264,4 +265,3 @@ export interface Country {
     return countries.find(country => country.dialCode === formattedDialCode);
   };
   
-  export const sortedCountries = [...countries].sort((a, b) => a.name.localeCompare(b.name));
