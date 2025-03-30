@@ -70,88 +70,6 @@ export default function TrajetForm() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Become a Driver</CardTitle>
-          <CardDescription className="text-center">
-            Register your vehicle to start earning as a driver.
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="marque">Car Model</Label>
-              <Input 
-                id="marque" 
-                name="marque" 
-                placeholder="Toyota Camry, Honda Civic, etc." 
-                required 
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="matricule">License Plate Number</Label>
-              <Input 
-                id="matricule" 
-                name="matricule" 
-                placeholder="Enter vehicle license plate" 
-                required 
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="image">Vehicle Image</Label>
-              <div className="flex items-center gap-4">
-                <Input
-                  id="image"
-                  name="image"
-                  type="file"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full"
-                >
-                  Select Image
-                </Button>
-                {previewUrl && (
-                  <div className="relative w-16 h-16 overflow-hidden rounded-md">
-                    <img 
-                      src={previewUrl} 
-                      alt="Vehicle preview" 
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                )}
-              </div>
-              {previewUrl && (
-                <p className="text-xs text-muted-foreground mt-1">Image selected</p>
-              )}
-            </div>
-            
-            {error && (
-              <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-            
-            <Button 
-              type="submit" 
-              className="w-full bg-indigo-600 hover:bg-indigo-700"
-              disabled={isLoading}
-            >
-              {isLoading ? "Registering..." : "Register as Driver"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
     <div className="flex justify-center items-center min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background to-muted/30">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 flex flex-col items-center pb-8">
@@ -212,4 +130,4 @@ export default function TrajetForm() {
       </Card>
     </div>
   );
-)}
+}
