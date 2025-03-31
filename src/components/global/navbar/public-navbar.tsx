@@ -75,8 +75,8 @@ export function PublicNavbar() {
           <Link href="/" className="text-sm font-medium transition-colors hover:text-primary">
             Home
           </Link>
-          <Link href="#features" className="text-sm font-medium transition-colors hover:text-primary">
-            Features
+          <Link href="/trips" className="text-sm font-medium transition-colors hover:text-primary">
+            All Trips
           </Link>
           <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
             About
@@ -214,11 +214,12 @@ export function PublicNavbar() {
               Home
             </Link>
             <Link
-              href="#features"
+              href="/trips"
               className="block text-sm font-medium transition-colors hover:text-primary"
               onClick={() => setIsMenuOpen(false)}
             >
-              Features
+                          All Trips
+
             </Link>
             <Link
               href="#"
