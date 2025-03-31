@@ -117,7 +117,7 @@ export default function Page() {
         arrival_date: arrival_datetime,
         nb_places: parseInt(formData.nb_places),
       };
-
+      
       // Use the APIClient to make the request
       const { data: responseData } = await apiClient.post("/create-trajet/", {
         body: apiData,
