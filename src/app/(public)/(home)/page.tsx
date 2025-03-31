@@ -23,19 +23,14 @@ export default function Page(): React.ReactNode {
 
   return (
     <div className="flex flex-col w-full">
-      {/* Hero Section */}
       <Hero mounted={mounted} />
 
-      {/* Features Section */}
       <Features />
 
-      {/* Track Audience Activities Section */}
       <ActivityTracker />
 
-      {/* How It Works Section */}
       <HowItWorks />
 
-      {/* CTA Section */}
       <CTA />
     </div>
   );

@@ -73,7 +73,7 @@ export default function Hero({ mounted }: HeroProps) {
             variants={motionVariants.fadeInLeft}
           >
             <motion.div
-              className="w-full h-full rounded-full bg-indigo-100 dark:bg-indigo-900/20 absolute top-0 left-0 transform -translate-x-1/4 -translate-y-1/4 z-0"
+              className="w-full h-full rounded-full bg-indigo-100 dark:bg-indigo-900/20 absolute top-0 left-0 transform -translate-x-10 -translate-y-16 z-0"
               style={{ width: "120%", height: "120%", opacity: 0.6 }}
               animate={{
                 scale: [1, 1.05, 1],
