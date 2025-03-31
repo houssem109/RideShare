@@ -403,7 +403,7 @@ export default function Page() {
             <CardFooter className="px-0 pb-0 pt-4">
               <Button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-md transition-colors"
+                className="w-full bg-indigo-600  hover:bg-indigo-700 text-white font-medium py-2.5 rounded-md transition-colors"
                 disabled={isLoading}
               >
                 {isLoading ? (

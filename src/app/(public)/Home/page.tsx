@@ -296,8 +296,8 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Features Section */}
+{/* 
+     
       <section className="py-20 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -330,7 +330,7 @@ export default function Home() {
             variants={staggerContainer}
           >
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              {/* Feature 1 */}
+              
               <motion.div
                 className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg"
                 variants={fadeInUp}
@@ -370,7 +370,7 @@ export default function Home() {
                 </p>
               </motion.div>
 
-              {/* Feature 2 */}
+           
               <motion.div
                 className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg"
                 variants={fadeInUp}
@@ -404,7 +404,7 @@ export default function Home() {
                 </p>
               </motion.div>
 
-              {/* Feature 3 */}
+             
               <motion.div
                 className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg"
                 variants={fadeInUp}
@@ -440,7 +440,8 @@ export default function Home() {
             </div>
           </motion.div>
         </div>
-      </section>
+      </section> 
+      */}
 
       {/* Features Section */}
       <section className="py-20 bg-gray-50 dark:bg-gray-900">
