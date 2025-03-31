@@ -1,92 +1,71 @@
 "use client";
-import React, { useState } from 'react';
-import { MapPin, Clock, Users, ChevronLeft, ChevronRight, Heart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { MapPin, Clock, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
+import { apiClient } from '@/lib/fetch';
+
+// Define interface based on your database schema
+interface Trip {
+  id: number;
+  name: string; // Driver's name
+  phonenumber: string;
+  price: number;
+  departure: string; // From location
+  arrival: string; // To location
+  departure_date: string;
+  arrival_date: string;
+  nb_places: number; // Available seats
+  status: string;
+  voiture_id: number;
+  owner_id_id: number;
+  // Add any additional fields you need
+  rating?: number; // Optional field not in your DB schema
+}
 
 const Page = () => {
-  // Sample data for trips
-  const [trips, setTrips] = useState([
-    {
-      id: 1,
-      driver: 'Rahma Bh.',
-      from: 'Downtown',
-      to: 'Tech Park',
-      time: '8:30 AM',
-      price: '5.50',
-      seats: 3,
-      rating: 4,
-      image: '/api/placeholder/400/250'
-    },
-    {
-      id: 2,
-      driver: 'Nour B.',
-      from: 'Central Station',
-      to: 'University',
-      time: '9:00 AM',
-      price: '4.75',
-      seats: 2,
-      rating: 5,
-      image: '/api/placeholder/400/250'
-    },
-    {
-      id: 3,
-      driver: 'Houssem Bj.',
-      from: 'Mall Plaza',
-      to: 'Business District',
-      time: '10:00 AM',
-      price: '6.00',
-      seats: 4,
-      rating: 3,
-      image: '/api/placeholder/400/250'
-    },
-    {
-      id: 4,
-      driver: 'Eya D.',
-      from: 'Residential Area',
-      to: 'Airport',
-      time: '10:30 AM',
-      price: '5.25',
-      seats: 1,
-      rating: 4,
-      image: '/api/placeholder/400/250'
-    },
-    {
-      id: 5,
-      driver: 'Ahmed K.',
-      from: 'Sports Complex',
-      to: 'Shopping Center',
-      time: '11:15 AM',
-      price: '3.75',
-      seats: 3,
-      rating: 5,
-      image: '/api/placeholder/400/250'
-    },
-    {
-      id: 6,
-      driver: 'Sarra M.',
-      from: 'Beach Road',
-      to: 'City Center',
-      time: '12:00 PM',
-      price: '4.50',
-      seats: 2,
-      rating: 4,
-      image: '/api/placeholder/400/250'
-    }
-  ]);
-
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const [fromFilter, setFromFilter] = useState('');
   const [toFilter, setToFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const tripsPerPage = 6;
 
+  // Fetch trips from API
+  useEffect(() => {
+    const fetchTrips = async () => {
+      try {
+        setLoading(true);
+        const { data } = await apiClient.get<Trip[]>('/available-trajets/');
+        console.log('Fetched trips:', data);
+        // Add rating field to each trip (since it's not in your DB schema)
+        const tripsWithRating = data.map((trip: any) => ({
+          ...trip,
+          rating: Math.floor(Math.random() * 3) + 3 // Random rating between 3-5
+        }));
+        
+        setTrips(tripsWithRating);
+        setError(null);
+      } catch (err: any) {
+        console.error('Failed to fetch trips:', err);
+        setError(err.message || 'Failed to load trips. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTrips();
+  }, []);
+
   // Filter trips based on from and to locations
   const filteredTrips = trips.filter(trip => 
-    trip.from.toLowerCase().includes(fromFilter.toLowerCase()) && 
-    trip.to.toLowerCase().includes(toFilter.toLowerCase())
+    trip.departure.toLowerCase().includes(fromFilter.toLowerCase()) && 
+    trip.arrival.toLowerCase().includes(toFilter.toLowerCase())
   );
 
   // Calculate pagination
@@ -94,6 +73,20 @@ const Page = () => {
   const indexOfFirstTrip = indexOfLastTrip - tripsPerPage;
   const currentTrips = filteredTrips.slice(indexOfFirstTrip, indexOfLastTrip);
   const totalPages = Math.ceil(filteredTrips.length / tripsPerPage);
+
+  // Format date to time (e.g., "8:30 AM")
+  const formatTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+    } catch (error) {
+      return "Invalid time";
+    }
+  };
 
   // Function to render stars based on rating
   const renderRating = (rating: number) => {
@@ -155,30 +148,51 @@ const Page = () => {
         </CardContent>
       </Card>
       
-      {/* Trip Grid */}
-      {currentTrips.length > 0 ? (
+      {/* Loading, Error and Empty States */}
+      {loading ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+            </div>
+            <p className="mt-4 text-gray-600">Loading available trips...</p>
+          </CardContent>
+        </Card>
+      ) : error ? (
+        <Card>
+          <CardContent className="p-8 text-center text-red-500">
+            <p>{error}</p>
+          </CardContent>
+        </Card>
+      ) : currentTrips.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center text-gray-500">
+            <p>No matching trips found. Try adjusting your search criteria.</p>
+          </CardContent>
+        </Card>
+      ) : (
         <>
+          {/* Trip Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentTrips.map((trip) => (
               <Card key={trip.id} className="overflow-hidden">
                 <div className="relative">
                   <Image 
                     src={"/opel.jpg"} 
-                    alt={`Trip from ${trip.from} to ${trip.to}`} 
-                    className="w-full  object-cover"
+                    alt={`Trip from ${trip.departure} to ${trip.arrival}`} 
+                    className="w-full object-cover"
                     width={400}
                     height={250}
                   />
-                 
                 </div>
                 <CardHeader className="p-4">
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="flex items-center gap-2">
-                        {trip.from} → {trip.to}
+                        {trip.departure} → {trip.arrival}
                       </CardTitle>
                       <CardDescription className="flex items-center gap-1 mt-1">
-                        <Clock className="h-3 w-3" /> {trip.time}
+                        <Clock className="h-3 w-3" /> {formatTime(trip.departure_date)}
                       </CardDescription>
                     </div>
                   </div>
@@ -186,16 +200,16 @@ const Page = () => {
                 <CardContent className="p-4 pt-0">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 bg-indigo-200 rounded-full flex items-center justify-center text-indigo-600 font-medium">
-                      {trip.driver.charAt(0)}
+                      {trip.name.charAt(0)}
                     </div>
-                    <span className="font-medium">{trip.driver}</span>
+                    <span className="font-medium">{trip.name}</span>
                   </div>
                   <div className="flex justify-between items-center mt-3">
                     <div className="flex items-center gap-1">
                       <Users className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">{trip.seats} seats</span>
+                      <span className="text-sm text-gray-600">{trip.nb_places} seats</span>
                     </div>
-                    {renderRating(trip.rating)}
+                    {renderRating(trip.rating || 4)}
                   </div>
                 </CardContent>
                 <CardFooter className="p-4 pt-0 flex justify-between items-center">
@@ -235,12 +249,6 @@ const Page = () => {
             </div>
           )}
         </>
-      ) : (
-        <Card>
-          <CardContent className="p-8 text-center text-gray-500">
-            <p>No matching trips found. Try adjusting your search criteria.</p>
-          </CardContent>
-        </Card>
       )}
     </div>
   );
