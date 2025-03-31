@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import { motion } from "framer-motion";
-import { motionVariants } from "./animations/MotionVariants";
+import { motionVariants } from "../../../../components/animations/MotionVariants";
 
 interface FeatureCardProps {
   icon: ReactNode;

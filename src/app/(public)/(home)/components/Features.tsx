@@ -4,8 +4,8 @@ import { ReactNode } from "react";
 import { motion } from "framer-motion";
 
 import UsersGroup from "@/components/svg/UsersGroup";
-import AnimatedContainer from "./AnimatedContainer";
-import { motionVariants } from "./animations/MotionVariants";
+import AnimatedContainer from "../../../../components/layout/AnimatedContainer";
+import { motionVariants } from "../../../../components/animations/MotionVariants";
 import FeatureCard from "./FeatureCard";
 
 interface FeatureItem {

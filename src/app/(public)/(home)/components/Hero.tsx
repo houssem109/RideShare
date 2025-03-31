@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { motionVariants } from "./animations/MotionVariants";
+import { motionVariants } from "../../../../components/animations/MotionVariants";
 
 
 interface HeroProps {

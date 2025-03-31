@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import AnimatedContainer from "./AnimatedContainer";
-import { motionVariants } from "./animations/MotionVariants";
+import AnimatedContainer from "../../../../components/layout/AnimatedContainer";
+import { motionVariants } from "../../../../components/animations/MotionVariants";
 import StepCard from "./StepCard";
 
 
