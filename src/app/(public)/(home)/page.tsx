@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect } from "react";
 import Hero from "./components/Hero";
 import ActivityTracker from "./components/ActivityTracker";
 import CTA from "./components/CTA";

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { motionVariants } from "../../../../components/animations/MotionVariants";
+import { motionVariants } from "@/components/animations/MotionVariants";
 
 
 export default function ActivityTracker() {
