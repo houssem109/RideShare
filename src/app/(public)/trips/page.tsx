@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
-import { apiClient } from '@/lib/fetch';
-
+import { apiClient } from '@/lib/axios';
 // Define interface based on your database schema
 interface Trip {
   id: number;
@@ -22,6 +21,7 @@ interface Trip {
   status: string;
   voiture_id: number;
   owner_id_id: number;
+  image?: string; // Image URL
   // Add any additional fields you need
   rating?: number; // Optional field not in your DB schema
 }
@@ -41,8 +41,8 @@ const Page = () => {
     const fetchTrips = async () => {
       try {
         setLoading(true);
-        const { data } = await apiClient.get<Trip[]>('/available-trajets/');
-        console.log('Fetched trips:', data);
+        const { data } = await apiClient.get<Trip[]>('available-trajets/');
+        
         // Add rating field to each trip (since it's not in your DB schema)
         const tripsWithRating = data.map((trip: any) => ({
           ...trip,
@@ -111,39 +111,53 @@ const Page = () => {
       <h1 className="text-3xl font-bold text-center mb-8">All Available Trips</h1>
       
       {/* Search Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Search Trips</CardTitle>
-          <CardDescription>Filter available rides by location</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Card className="mb-8 shadow-lg border-0 overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-600 to-indigo-400 p-5">
+          <h2 className="text-xl font-bold text-white mb-1">Find Your Perfect Ride</h2>
+          <p className="text-indigo-100 text-sm">Enter your departure and destination to find available rides</p>
+        </div>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="from">From</Label>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <MapPin className="h-4 w-4 text-indigo-600" />
+                </div>
+                <Label htmlFor="from" className="font-medium">From</Label>
+              </div>
               <div className="relative">
-                <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 <Input
                   id="from"
-                  className="pl-10"
-                  placeholder="Departure location"
+                  className="pl-4 py-6 rounded-xl border-indigo-100 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm"
+                  placeholder="Enter departure location"
                   value={fromFilter}
                   onChange={(e) => setFromFilter(e.target.value)}
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="to">To</Label>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <MapPin className="h-4 w-4 text-indigo-600" />
+                </div>
+                <Label htmlFor="to" className="font-medium">To</Label>
+              </div>
               <div className="relative">
-                <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 <Input
                   id="to"
-                  className="pl-10"
-                  placeholder="Destination location"
+                  className="pl-4 py-6 rounded-xl border-indigo-100 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 shadow-sm"
+                  placeholder="Enter destination location"
                   value={toFilter}
                   onChange={(e) => setToFilter(e.target.value)}
                 />
               </div>
             </div>
+          </div>
+          
+          <div className="mt-6 flex justify-center">
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 rounded-xl text-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg">
+              Search Rides
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -178,7 +192,7 @@ const Page = () => {
               <Card key={trip.id} className="overflow-hidden">
                 <div className="relative">
                   <Image 
-                    src={"/opel.jpg"} 
+                    src={trip.image ||"/opel.jpg"} 
                     alt={`Trip from ${trip.departure} to ${trip.arrival}`} 
                     className="w-full object-cover"
                     width={400}

@@ -23,7 +23,7 @@ import {
   Phone,
   CarFront,
 } from "lucide-react";
-import { apiClient } from "@/lib/fetch";
+import { apiClient } from "@/lib/axios";
 import { ApiError } from "next/dist/server/api-utils";
 
 export default function Page() {
