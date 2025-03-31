@@ -2,11 +2,12 @@
 
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
-import Hero from "./components/Hero";
-import ActivityTracker from "./components/ActivityTracker";
-import CTA from "./components/CTA";
-import Features from "./components/Features";
-import HowItWorks from "./components/HowItWorks";
+import ActivityTracker from "./_components/TrackerComp/ActivityTracker";
+import CTA from "./_components/CTA";
+import Features from "./_components/Feature/Features";
+import Hero from "./_components/Hero";
+import HowItWorks from "./_components/HowItWorks";
+
 
 
 
