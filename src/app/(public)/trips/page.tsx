@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
-import { apiClient } from '@/lib/axios';
+import { apiClient } from "@/lib/axios"; // Adjust the import based on your axios setup
+
 // Define interface based on your database schema
 interface Trip {
   id: number;
@@ -21,15 +22,16 @@ interface Trip {
   status: string;
   voiture_id: number;
   owner_id_id: number;
-  image?: string; // Image URL
   // Add any additional fields you need
   rating?: number; // Optional field not in your DB schema
 }
 
 const Page = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [allTrips, setAllTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
   
   const [fromFilter, setFromFilter] = useState('');
   const [toFilter, setToFilter] = useState('');
@@ -62,11 +64,26 @@ const Page = () => {
     fetchTrips();
   }, []);
 
-  // Filter trips based on from and to locations
-  const filteredTrips = trips.filter(trip => 
-    trip.departure.toLowerCase().includes(fromFilter.toLowerCase()) && 
-    trip.arrival.toLowerCase().includes(toFilter.toLowerCase())
-  );
+  // Handle search button click
+  const handleSearch = () => {
+    setSearchLoading(true);
+    
+    // Simulate a delay of 3 seconds
+    setTimeout(() => {
+      // Filter trips based on from and to locations
+      const filtered = allTrips.filter(trip => 
+        trip.departure.toLowerCase().includes(fromFilter.toLowerCase()) && 
+        trip.arrival.toLowerCase().includes(toFilter.toLowerCase())
+      );
+      
+      setTrips(filtered);
+      setCurrentPage(1); // Reset to first page after search
+      setSearchLoading(false);
+    }, 1000);
+  };
+  
+  // Filtered trips for display
+  const filteredTrips = trips;
 
   // Calculate pagination
   const indexOfLastTrip = currentPage * tripsPerPage;
@@ -155,8 +172,19 @@ const Page = () => {
           </div>
           
           <div className="mt-6 flex justify-center">
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 rounded-xl text-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg">
-              Search Rides
+            <Button 
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 rounded-xl text-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg"
+              onClick={handleSearch}
+              disabled={searchLoading}
+            >
+              {searchLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                  Searching...
+                </div>
+              ) : (
+                "Search Rides"
+              )}
             </Button>
           </div>
         </CardContent>
@@ -192,7 +220,7 @@ const Page = () => {
               <Card key={trip.id} className="overflow-hidden">
                 <div className="relative">
                   <Image 
-                    src={trip.image ||"/opel.jpg"} 
+                    src={"/opel.jpg"} 
                     alt={`Trip from ${trip.departure} to ${trip.arrival}`} 
                     className="w-full object-cover"
                     width={400}
