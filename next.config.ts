@@ -7,16 +7,7 @@ const nextConfig = {
   // Other Next.js configuration options
   reactStrictMode: true,
   
-  // Redirects configuration
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/Home',
-        permanent: true,
-      },
-    ];
-  },
+
 };
 
 export default nextConfig;

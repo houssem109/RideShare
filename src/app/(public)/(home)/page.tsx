@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import UsersGroup from "@/components/svg/UsersGroup";
 
-export default function Home() {
+export default function Page() {
   useTheme();
 
   const [mounted, setMounted] = useState(false);

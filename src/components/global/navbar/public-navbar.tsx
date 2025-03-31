@@ -18,7 +18,6 @@ import ShieldCheckIcon from "@/components/svg/ShieldCheckIcon";
 
 export function PublicNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [user, setUser] = useState<{email?: string | null, user_metadata?: any} | null>(null);
   const [isDriver, setIsDriver] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
