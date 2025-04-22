@@ -18,7 +18,6 @@ import ShieldCheckIcon from "@/components/svg/ShieldCheckIcon";
 
 export function PublicNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [user, setUser] = useState<{email?: string | null, user_metadata?: any} | null>(null);
   const [isDriver, setIsDriver] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,8 +75,8 @@ export function PublicNavbar() {
           <Link href="/" className="text-sm font-medium transition-colors hover:text-primary">
             Home
           </Link>
-          <Link href="#features" className="text-sm font-medium transition-colors hover:text-primary">
-            Features
+          <Link href="/trips" className="text-sm font-medium transition-colors hover:text-primary">
+            All Trips
           </Link>
           <Link href="#" className="text-sm font-medium transition-colors hover:text-primary">
             About
@@ -215,11 +214,12 @@ export function PublicNavbar() {
               Home
             </Link>
             <Link
-              href="#features"
+              href="/trips"
               className="block text-sm font-medium transition-colors hover:text-primary"
               onClick={() => setIsMenuOpen(false)}
             >
-              Features
+                          All Trips
+
             </Link>
             <Link
               href="#"

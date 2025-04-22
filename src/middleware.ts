@@ -38,11 +38,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/espace-client', request.url));
   }
 
-  // Redirect root URL to the home page in public folder
   if (request.nextUrl.pathname === '/') {
     return NextResponse.rewrite(new URL('/', request.url));
   }
-
   return response;
 }
 

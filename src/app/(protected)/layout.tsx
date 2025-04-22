@@ -9,7 +9,7 @@ export default function ProtectedLayout({
 }) {
   return (
     <AuthProvider>
-      <div className="flex min-h-screen flex-col">
+      <div className="flex bg-gray-50 min-h-screen flex-col">
         <Navbar />
         <main className="flex-1 container mx-auto px-4 py-8">
           {children}
