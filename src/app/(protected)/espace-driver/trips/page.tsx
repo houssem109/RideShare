@@ -106,18 +106,26 @@ const Page = () => {
         
         const token = authData.session.access_token;
         
-        // Make authenticated delete request
-        // await apiClient.delete(`trajet/${id}/`, {
-        //   headers: {
-        //     Authorization: `Bearer ${token}`
-        //   }
-        // });
+        // Call the delete API endpoint with authentication
+         await apiClient.delete<DriverTrip[]>("user-trajets/",{
+          token,
+
+        });
         
-        // Remove trip from state without calling the API for now
+        // Remove trip from state after successful deletion
         setTrips(trips.filter(trip => trip.id !== id));
+        
+        // Show success alert
+        alert("Trip deleted successfully");
       } catch (err: any) {
         console.error("Failed to delete trip:", err);
-        alert("Failed to delete trip. Please try again.");
+        
+        // Show more specific error message if available
+        if (err.response && err.response.data && err.response.data.error) {
+          alert(`Error: ${err.response.data.error}`);
+        } else {
+          alert("Failed to delete trip. Please try again.");
+        }
       }
     }
   };

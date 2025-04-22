@@ -44,32 +44,15 @@ export function UserDropdown({ user, isDriver, currentPath = '' }: UserDropdownP
             <DropdownMenuSeparator />
             
             {/* Show Client Dashboard link - highlight if current page */}
-            <DropdownMenuItem asChild className={isClientDashboard ? 'bg-muted' : ''}>
-              <Link href="/espace-client" className="flex items-center">
+            <DropdownMenuItem asChild>
+              <Link href="/profile" className="flex items-center">
                 <Home className="mr-2 h-4 w-4" />
-                <span>Client Dashboard</span>
+                <span>profile</span>
               </Link>
             </DropdownMenuItem>
             
-            {/* Show Driver Dashboard link if user is a driver - highlight if current page */}
-            {isDriver && (
-              <DropdownMenuItem asChild className={isDriverDashboard ? 'bg-muted' : ''}>
-                <Link href="/espace-driver" className="flex items-center">
-                  <Car className="mr-2 h-4 w-4" />
-                  <span>Driver Dashboard</span>
-                </Link>
-              </DropdownMenuItem>
-            )}
+           
             
-            {/* Show Become a Driver link if user is not a driver */}
-            {!isDriver && (
-              <DropdownMenuItem asChild>
-                <Link href="/become-driver" className="flex items-center">
-                  <Car className="mr-2 h-4 w-4" />
-                  <span>Become a Driver</span>
-                </Link>
-              </DropdownMenuItem>
-            )}
             
             <DropdownMenuSeparator />
             <form action={signOutAction}>

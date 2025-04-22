@@ -51,14 +51,15 @@ const Page = () => {
       try {
         setLoading(true);
         const { data } = await apiClient.get<Trip[]>("available-trajets/");
-
+        console.log("Fetched trips:", data);
         // Add rating field to each trip (since it's not in your DB schema)
         const tripsWithRating = data.map((trip: any) => ({
           ...trip,
           rating: Math.floor(Math.random() * 3) + 3, // Random rating between 3-5
         }));
-
+    
         setTrips(tripsWithRating);
+        setAllTrips(tripsWithRating); // Add this line to set allTrips
         setError(null);
       } catch (err: any) {
         console.error("Failed to fetch trips:", err);
@@ -76,22 +77,26 @@ const Page = () => {
   // Handle search button click
   const handleSearch = () => {
     setSearchLoading(true);
-
-    // Simulate a delay of 3 seconds
+  
+    // Simulate a delay of 1 second
     setTimeout(() => {
-      // Filter trips based on from and to locations
-      const filtered = allTrips.filter(
-        (trip) =>
-          trip.departure.toLowerCase().includes(fromFilter.toLowerCase()) &&
-          trip.arrival.toLowerCase().includes(toFilter.toLowerCase())
-      );
-
-      setTrips(filtered);
+      // If both search fields are empty, reset to show all trips
+      if (!fromFilter.trim() && !toFilter.trim()) {
+        setTrips(allTrips);
+      } else {
+        // Filter trips based on from and to locations
+        const filtered = allTrips.filter(
+          (trip) =>
+            trip.departure.toLowerCase().includes(fromFilter.toLowerCase()) &&
+            trip.arrival.toLowerCase().includes(toFilter.toLowerCase())
+        );
+        setTrips(filtered);
+      }
+      
       setCurrentPage(1); // Reset to first page after search
       setSearchLoading(false);
     }, 1000);
   };
-
   // Filtered trips for display
   const filteredTrips = trips;
 
