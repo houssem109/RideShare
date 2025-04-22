@@ -119,7 +119,7 @@ export default function Page() {
       };
       
       // Use the APIClient to make the request
-      const { data: responseData } = await apiClient.post("/create-trajet/", {
+      const { data: responseData } = await apiClient.post("create-trajet/", {
         body: apiData,
         token,
       });
