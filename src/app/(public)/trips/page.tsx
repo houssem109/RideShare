@@ -1,11 +1,18 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Users, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import Image from 'next/image';
+import React, { useState, useEffect } from "react";
+import { MapPin, Clock, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Image from "next/image";
 import { apiClient } from "@/lib/axios"; // Adjust the import based on your axios setup
 
 // Define interface based on your database schema
@@ -32,9 +39,9 @@ const Page = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
-  
-  const [fromFilter, setFromFilter] = useState('');
-  const [toFilter, setToFilter] = useState('');
+
+  const [fromFilter, setFromFilter] = useState("");
+  const [toFilter, setToFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const tripsPerPage = 6;
 
@@ -43,19 +50,21 @@ const Page = () => {
     const fetchTrips = async () => {
       try {
         setLoading(true);
-        const { data } = await apiClient.get<Trip[]>('available-trajets/');
-        
+        const { data } = await apiClient.get<Trip[]>("available-trajets/");
+
         // Add rating field to each trip (since it's not in your DB schema)
         const tripsWithRating = data.map((trip: any) => ({
           ...trip,
-          rating: Math.floor(Math.random() * 3) + 3 // Random rating between 3-5
+          rating: Math.floor(Math.random() * 3) + 3, // Random rating between 3-5
         }));
-        
+
         setTrips(tripsWithRating);
         setError(null);
       } catch (err: any) {
-        console.error('Failed to fetch trips:', err);
-        setError(err.message || 'Failed to load trips. Please try again later.');
+        console.error("Failed to fetch trips:", err);
+        setError(
+          err.message || "Failed to load trips. Please try again later."
+        );
       } finally {
         setLoading(false);
       }
@@ -67,21 +76,22 @@ const Page = () => {
   // Handle search button click
   const handleSearch = () => {
     setSearchLoading(true);
-    
+
     // Simulate a delay of 3 seconds
     setTimeout(() => {
       // Filter trips based on from and to locations
-      const filtered = allTrips.filter(trip => 
-        trip.departure.toLowerCase().includes(fromFilter.toLowerCase()) && 
-        trip.arrival.toLowerCase().includes(toFilter.toLowerCase())
+      const filtered = allTrips.filter(
+        (trip) =>
+          trip.departure.toLowerCase().includes(fromFilter.toLowerCase()) &&
+          trip.arrival.toLowerCase().includes(toFilter.toLowerCase())
       );
-      
+
       setTrips(filtered);
       setCurrentPage(1); // Reset to first page after search
       setSearchLoading(false);
     }, 1000);
   };
-  
+
   // Filtered trips for display
   const filteredTrips = trips;
 
@@ -95,10 +105,10 @@ const Page = () => {
   const formatTime = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
+      return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
       });
     } catch (error) {
       return "Invalid time";
@@ -112,7 +122,9 @@ const Page = () => {
         {[...Array(5)].map((_, i) => (
           <svg
             key={i}
-            className={`w-4 h-4 ${i < rating ? 'text-yellow-400' : 'text-gray-300'}`}
+            className={`w-4 h-4 ${
+              i < rating ? "text-yellow-400" : "text-gray-300"
+            }`}
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -125,13 +137,19 @@ const Page = () => {
 
   return (
     <div className="flex flex-col p-4 md:p-6 bg-gray-50">
-      <h1 className="text-3xl font-bold text-center mb-8">All Available Trips</h1>
-      
+      <h1 className="text-3xl font-bold text-center mb-8">
+        All Available Trips
+      </h1>
+
       {/* Search Filters */}
       <Card className="mb-8 shadow-lg border-0 overflow-hidden">
         <div className="bg-gradient-to-r from-indigo-600 to-indigo-400 p-5">
-          <h2 className="text-xl font-bold text-white mb-1">Find Your Perfect Ride</h2>
-          <p className="text-indigo-100 text-sm">Enter your departure and destination to find available rides</p>
+          <h2 className="text-xl font-bold text-white mb-1">
+            Find Your Perfect Ride
+          </h2>
+          <p className="text-indigo-100 text-sm">
+            Enter your departure and destination to find available rides
+          </p>
         </div>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -140,7 +158,9 @@ const Page = () => {
                 <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
                   <MapPin className="h-4 w-4 text-indigo-600" />
                 </div>
-                <Label htmlFor="from" className="font-medium">From</Label>
+                <Label htmlFor="from" className="font-medium">
+                  From
+                </Label>
               </div>
               <div className="relative">
                 <Input
@@ -157,7 +177,9 @@ const Page = () => {
                 <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
                   <MapPin className="h-4 w-4 text-indigo-600" />
                 </div>
-                <Label htmlFor="to" className="font-medium">To</Label>
+                <Label htmlFor="to" className="font-medium">
+                  To
+                </Label>
               </div>
               <div className="relative">
                 <Input
@@ -170,9 +192,9 @@ const Page = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="mt-6 flex justify-center">
-            <Button 
+            <Button
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 rounded-xl text-lg font-medium transition-all duration-200 shadow-md hover:shadow-lg"
               onClick={handleSearch}
               disabled={searchLoading}
@@ -189,7 +211,7 @@ const Page = () => {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Loading, Error and Empty States */}
       {loading ? (
         <Card>
@@ -219,9 +241,9 @@ const Page = () => {
             {currentTrips.map((trip) => (
               <Card key={trip.id} className="overflow-hidden">
                 <div className="relative">
-                  <Image 
-                    src={"/opel.jpg"} 
-                    alt={`Trip from ${trip.departure} to ${trip.arrival}`} 
+                  <Image
+                    src={"/opel.jpg"}
+                    alt={`Trip from ${trip.departure} to ${trip.arrival}`}
                     className="w-full object-cover"
                     width={400}
                     height={250}
@@ -234,7 +256,8 @@ const Page = () => {
                         {trip.departure} → {trip.arrival}
                       </CardTitle>
                       <CardDescription className="flex items-center gap-1 mt-1">
-                        <Clock className="h-3 w-3" /> {formatTime(trip.departure_date)}
+                        <Clock className="h-3 w-3" />{" "}
+                        {formatTime(trip.departure_date)}
                       </CardDescription>
                     </div>
                   </div>
@@ -249,7 +272,9 @@ const Page = () => {
                   <div className="flex justify-between items-center mt-3">
                     <div className="flex items-center gap-1">
                       <Users className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">{trip.nb_places} seats</span>
+                      <span className="text-sm text-gray-600">
+                        {trip.nb_places} seats
+                      </span>
                     </div>
                     {renderRating(trip.rating || 4)}
                   </div>
@@ -258,19 +283,23 @@ const Page = () => {
                   <div className="text-lg font-semibold">
                     À Partir {trip.price} DT
                   </div>
-                  <Button className="bg-indigo-600 hover:bg-indigo-700">Book</Button>
+                  <Button className="bg-indigo-600 hover:bg-indigo-700">
+                    Book
+                  </Button>
                 </CardFooter>
               </Card>
             ))}
           </div>
-          
+
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center mt-8">
               <div className="flex items-center space-x-2">
-                <Button 
+                <Button
                   variant="outline"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
@@ -279,9 +308,11 @@ const Page = () => {
                 <span className="text-sm text-gray-600">
                   Page {currentPage} of {totalPages}
                 </span>
-                <Button 
+                <Button
                   variant="outline"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
                   disabled={currentPage === totalPages}
                 >
                   Next
