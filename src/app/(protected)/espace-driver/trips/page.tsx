@@ -58,14 +58,18 @@ const Page = () => {
         // Get authentication token from Supabase
         const supabase = createClient();
         const { data: authData } = await supabase.auth.getSession();
-        
+
         if (!authData.session) {
           throw new Error("You must be logged in to view your trips");
         }
         
-        
+        const token = authData.session.access_token;
+
         // Make authenticated API request
-        const { data } = await apiClient.get<DriverTrip[]>("user-trajets/");
+        const { data } = await apiClient.get<DriverTrip[]>("user-trajets/",{
+          token,
+
+        });
 
         // Add booking_count to each trip
         const tripsWithBookings = data.map((trip) => ({

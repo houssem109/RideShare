@@ -139,7 +139,7 @@ export default function Page() {
         nb_places: "",
       });
       // Navigate to driver dashboard or trips list
-      router.push("/espace-driver");
+      router.push("/trips");
     } catch (error) {
       // Type assertion with a more specific type
       const apiError = error as ApiError;
