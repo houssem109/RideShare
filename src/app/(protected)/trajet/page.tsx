@@ -131,6 +131,10 @@ export default function TripForm() {
       setIsLoading(false);
     }
   };
+  
+  
+      
+  
 
   return (
     <div className="flex justify-center items-center min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white">
