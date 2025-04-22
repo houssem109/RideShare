@@ -119,7 +119,7 @@ export default function Page() {
       };
       
       // Use the APIClient to make the request
-      const { data: responseData } = await apiClient.post("/create-trajet/", {
+      const { data: responseData } = await apiClient.post("create-trajet/", {
         body: apiData,
         token,
       });
@@ -149,6 +149,10 @@ export default function Page() {
       setIsLoading(false);
     }
   };
+  
+  
+      
+  
 
   return (
     <div className="flex justify-center items-center min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white">
