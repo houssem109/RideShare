@@ -30,7 +30,7 @@ export default function PaymentSuccessPage() {
           
           <div className="flex flex-col space-y-2">
             <Button
-              onClick={() => router.push("/trips")}
+              onClick={() => router.push("/trajectory")}
               className="w-full"
             >
               Browse More Trips

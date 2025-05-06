@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import axios from 'axios';
+import { useParams } from 'next/navigation';
 
 interface FormData {
   nom: string;
@@ -13,13 +14,14 @@ interface FormData {
 }
 
 export default function ReservationPage() {
+  const { id } = useParams(); 
   const [formData, setFormData] = useState<FormData>({
     nom: '',
     prenom: '',
     tel: '',
     adresse: '',
-    trajet_id:3, // Default value for testing, not shown in form
-    passenger_id:1, // Default value for testing, not shown in form
+    trajet_id:3, 
+    passenger_id:1, 
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);

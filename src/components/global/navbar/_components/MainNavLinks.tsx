@@ -17,7 +17,7 @@ export function MainNavLinks({ isDriverMode, currentPath, isLoggedIn }: MainNavL
         Home
       </Link>
       
-      <Link href="/trips" className={`text-sm font-medium transition-colors hover:text-primary ${currentPath === '/trips' ? 'text-primary' : ''}`}>
+      <Link href="/trajectory" className={`text-sm font-medium transition-colors hover:text-primary ${currentPath === '/trajectory' ? 'text-primary' : ''}`}>
         All Trips
       </Link>
       
