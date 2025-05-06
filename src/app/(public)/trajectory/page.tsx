@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { apiClient } from "@/lib/axios"; // Adjust the import based on your axios setup
+import Link from "next/link";
 
 // Define interface based on your database schema
 interface Trip {
@@ -57,7 +58,7 @@ const Page = () => {
           ...trip,
           rating: Math.floor(Math.random() * 3) + 3, // Random rating between 3-5
         }));
-    
+        
         setTrips(tripsWithRating);
         setAllTrips(tripsWithRating); // Add this line to set allTrips
         setError(null);
@@ -289,7 +290,9 @@ const Page = () => {
                     À Partir {trip.price} DT
                   </div>
                   <Button className="bg-indigo-600 hover:bg-indigo-700">
+                  <Link href={`/espace-client/reservation/${trip.id}`}>
                     Book
+                  </Link>
                   </Button>
                 </CardFooter>
               </Card>

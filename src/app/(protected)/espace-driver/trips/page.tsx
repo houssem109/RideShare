@@ -1,6 +1,15 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { MapPin, Clock, Users, ChevronLeft, ChevronRight, Plus, Edit, Trash2 } from "lucide-react";
+import {
+  MapPin,
+  Clock,
+  Users,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Edit,
+  Trash2,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -10,37 +19,44 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
-import { apiClient } from "@/lib/axios"; // Adjust the import based on your axios setup
+import { apiClient } from "@/lib/axios";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import PassengerDialog from "./_components/PassengerDialog";
 
-// Define interface based on your database schema
+// Updated interface based on your actual API response
 interface DriverTrip {
   id: number;
-  name: string; // Driver's name
+  name: string;
   phonenumber: string;
-  price: number;
-  departure: string; // From location
-  arrival: string; // To location
+  price: string; // Changed to string based on your data
+  departure: string;
+  arrival: string;
   departure_date: string;
   arrival_date: string;
-  nb_places: number; // Available seats
+  nb_places: number;
   status: string;
-  voiture_id: number;
-  owner_id_id: number;
-  // Add any additional fields you need
-  booking_count?: number; // Number of bookings for this trip
+  voiture: number; // Changed from voiture_id
+  owner_id: number; // Changed from owner_id_id
+  created_at: string;
+  voiture_details: {
+    car_image_id: string;
+    id_voiture: number;
+    image: string;
+    marque: string;
+    matricule: string;
+  };
+  // We'll compute this since it's not in the API
+  booking_count?: number;
 }
-
+interface Passenger {
+  id: number;
+  name: string;
+  phonenumber: string;
+  status: "pending" | "confirmed" | "rejected";
+}
 const Page = () => {
   const [trips, setTrips] = useState<DriverTrip[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,13 +64,24 @@ const Page = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const tripsPerPage = 6;
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [tripPassengers, setTripPassengers] = useState<Passenger[]>([]);
+
+  // For the passenger dialog
+  const [passengerDialogOpen, setPassengerDialogOpen] = useState(false);
+  const [selectedTripId, setSelectedTripId] = useState<number | null>(null);
+
+  // Open passenger dialog
+  const openPassengerDialog = (tripId: number) => {
+    setSelectedTripId(tripId);
+    setPassengerDialogOpen(true);
+  };
 
   // Fetch driver trips from API with authentication
   useEffect(() => {
     const fetchDriverTrips = async () => {
       try {
         setLoading(true);
-        
+
         // Get authentication token from Supabase
         const supabase = createClient();
         const { data: authData } = await supabase.auth.getSession();
@@ -62,19 +89,21 @@ const Page = () => {
         if (!authData.session) {
           throw new Error("You must be logged in to view your trips");
         }
-        
+
         const token = authData.session.access_token;
 
         // Make authenticated API request
-        const { data } = await apiClient.get<DriverTrip[]>("user-trajets/",{
+        const { data } = await apiClient.get<DriverTrip[]>("user-trajets/", {
           token,
-
         });
 
-        // Add booking_count to each trip
+        console.log("Fetched trips:", data);
+
+        // Add booking_count to each trip - based on seed data
+        // In the real app, you would get this from the API
         const tripsWithBookings = data.map((trip) => ({
           ...trip,
-          booking_count: Math.floor(Math.random() * trip.nb_places), // Mock data - replace with actual booking count
+          booking_count: Math.floor(Math.random() * trip.nb_places), // Mock data until API provides this
         }));
 
         setTrips(tripsWithBookings);
@@ -99,27 +128,26 @@ const Page = () => {
         // Get authentication token from Supabase
         const supabase = createClient();
         const { data: authData } = await supabase.auth.getSession();
-        
+
         if (!authData.session) {
           throw new Error("You must be logged in to delete trips");
         }
-        
-        const token = authData.session.access_token;
-        
-        // Call the delete API endpoint with authentication
-         await apiClient.delete<DriverTrip[]>("user-trajets/",{
-          token,
 
-        });
-        
+        const token = authData.session.access_token;
+
+        // Call the delete API endpoint with authentication
+        await apiClient.delete(`user-trajets/${id}/`, {
+        token}
+        );
+
         // Remove trip from state after successful deletion
-        setTrips(trips.filter(trip => trip.id !== id));
-        
+        setTrips(trips.filter((trip) => trip.id !== id));
+
         // Show success alert
         alert("Trip deleted successfully");
       } catch (err: any) {
         console.error("Failed to delete trip:", err);
-        
+
         // Show more specific error message if available
         if (err.response && err.response.data && err.response.data.error) {
           alert(`Error: ${err.response.data.error}`);
@@ -131,9 +159,10 @@ const Page = () => {
   };
 
   // Filter trips based on status
-  const filteredTrips = statusFilter === "all" 
-    ? trips 
-    : trips.filter(trip => trip.status === statusFilter);
+  const filteredTrips =
+    statusFilter === "all"
+      ? trips
+      : trips.filter((trip) => trip.status === statusFilter);
 
   // Calculate pagination
   const indexOfLastTrip = currentPage * tripsPerPage;
@@ -154,7 +183,7 @@ const Page = () => {
       return "Invalid time";
     }
   };
-  
+
   // Format date to display date (e.g., "Apr 15, 2023")
   const formatDate = (dateString: string) => {
     try {
@@ -169,11 +198,25 @@ const Page = () => {
     }
   };
 
+  // Get appropriate status badge
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+      case "completed":
+        return <Badge className="bg-blue-100 text-blue-800">Completed</Badge>;
+      case "cancelled":
+        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
+    }
+  };
+
   return (
     <div className="flex flex-col p-4 md:p-6 bg-gray-50">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">My Trips</h1>
-        <Link href="/espace-driver/add-trajet">
+        <Link href="/espace-driver/add-trajectory">
           <Button className="bg-indigo-600 hover:bg-indigo-700">
             <Plus className="h-4 w-4 mr-2" />
             Create New Trip
@@ -254,24 +297,16 @@ const Page = () => {
             {currentTrips.map((trip) => (
               <Card key={trip.id} className="overflow-hidden">
                 <div className="relative">
+                  {/* Use the car image from API if available */}
                   <Image
-                    src={"/opel.jpg"}
+                    src={trip.voiture_details?.image || "/opel.jpg"}
                     alt={`Trip from ${trip.departure} to ${trip.arrival}`}
-                    className="w-full object-cover"
+                    className="w-full h-48 object-cover"
                     width={400}
                     height={250}
                   />
                   <div className="absolute top-2 right-2">
-                    <Badge className={`${
-                      trip.status === "active" 
-                        ? "bg-green-100 text-green-800" 
-                        : trip.status === "completed"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-red-100 text-red-800"
-                    }`}>
-                      {trip.status === "active" ? "Active" : 
-                       trip.status === "completed" ? "Completed" : "Cancelled"}
-                    </Badge>
+                    {getStatusBadge(trip.status)}
                   </div>
                 </div>
                 <CardHeader className="p-4">
@@ -280,18 +315,17 @@ const Page = () => {
                       <CardTitle className="flex items-center gap-2">
                         {trip.departure} → {trip.arrival}
                       </CardTitle>
-                      <CardDescription className="mt-1">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {formatTime(trip.departure_date)}
-                        </div>
-                        <div className="text-xs mt-1">
+                      <CardDescription>
+                        <span className="flex items-center gap-1 text-sm">
+                          <Clock className="h-3 w-3 mr-1" />{" "}
+                          {formatTime(trip.departure_date)}
+                        </span>
+                        <span className="block text-xs text-gray-500 mt-1">
                           {formatDate(trip.departure_date)}
-                        </div>
+                        </span>
                       </CardDescription>
                     </div>
-                    <div className="text-lg font-semibold">
-                      {trip.price} DT
-                    </div>
+                    <div className="text-lg font-semibold">{trip.price} DT</div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
@@ -302,53 +336,32 @@ const Page = () => {
                         {trip.booking_count || 0}/{trip.nb_places} seats booked
                       </span>
                     </div>
+                    {trip.voiture_details && (
+                      <div className="text-sm text-gray-600">
+                        {trip.voiture_details.marque}{" "}
+                        {trip.voiture_details.matricule}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
                 <CardFooter className="p-4 pt-0 flex justify-between items-center">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="border-indigo-200 text-indigo-600 hover:bg-indigo-50">
-                        <Users className="h-4 w-4 mr-2" />
-                        Passengers
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Passenger List</DialogTitle>
-                      </DialogHeader>
-                      <div className="mt-4">
-                        {trip.booking_count ? (
-                          <div className="space-y-3">
-                            {[...Array(trip.booking_count)].map((_, i) => (
-                              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
-                                    {String.fromCharCode(65 + i)}
-                                  </div>
-                                  <div>
-                                    <div className="font-medium">Passenger {i + 1}</div>
-                                    <div className="text-sm text-gray-500">+216 {Math.floor(10000000 + Math.random() * 90000000)}</div>
-                                  </div>
-                                </div>
-                                <Badge className="bg-green-100 text-green-800">Confirmed</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-center text-gray-500 py-4">No passengers have booked this trip yet.</p>
-                        )}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <Button
+                    variant="outline"
+                    className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                    onClick={() => openPassengerDialog(trip.id)}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Passengers
+                  </Button>
                   <div className="flex gap-2">
                     <Button variant="outline" className="p-2 h-9 w-9" asChild>
-                      <Link href={`/espace-driver/edit-trip/${trip.id}`}>
+                      <Link href={`/espace-driver/edit-trajectory/${trip.id}`}>
                         <Edit className="h-4 w-4" />
                         <span className="sr-only">Edit</span>
                       </Link>
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="p-2 h-9 w-9 border-red-200 text-red-500 hover:bg-red-50"
                       onClick={() => handleDeleteTrip(trip.id)}
                     >
@@ -390,6 +403,31 @@ const Page = () => {
                 </Button>
               </div>
             </div>
+          )}
+
+          {/* Passenger Dialog */}
+          {selectedTripId && (
+           <PassengerDialog
+           isOpen={passengerDialogOpen}
+           onClose={() => setPassengerDialogOpen(false)}
+           tripId={selectedTripId}
+           passengers={tripPassengers}
+           setPassengers={(newPassengers) => {
+             // Update the local tripPassengers state
+             setTripPassengers(newPassengers);
+             
+             // Also update the main trips state to keep everything in sync
+             if (selectedTripId) {
+               setTrips(prevTrips => 
+                 prevTrips.map(trip => 
+                   trip.id === selectedTripId 
+                     ? { ...trip, passengers: newPassengers } 
+                     : trip
+                 )
+               );
+             }
+           }}
+         />
           )}
         </>
       )}

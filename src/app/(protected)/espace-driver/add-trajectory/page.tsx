@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState, ChangeEvent, FormEvent } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -12,8 +10,10 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
 import {
   MapPin,
   Calendar,
@@ -22,14 +22,16 @@ import {
   DollarSign,
   Phone,
   CarFront,
-  PenTool,
 } from "lucide-react";
+import { apiClient } from "@/lib/axios";
+import { ApiError } from "next/dist/server/api-utils";
 
-export default function EditTrip() {
-  const router = useRouter();
-  const { id } = useParams(); // get ID from URL
+export default function Page() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
     name: "",
     phonenumber: "",
@@ -37,75 +39,54 @@ export default function EditTrip() {
     departure: "",
     arrival: "",
     departure_date: "",
-    departure_time: "10:00",
+    departure_time: "10:00", // Default time
     arrival_date: "",
-    arrival_time: "14:00",
+    arrival_time: "14:00", // Default time
     nb_places: "",
   });
 
   useEffect(() => {
-    const fetchTrip = async () => {
+    // Get the current user from Supabase
+    const fetchUserData = async () => {
       const supabase = createClient();
-      const { data: sessionData } = await supabase.auth.getSession();
+      const {
+        data: { user: supabaseUser },
+      } = await supabase.auth.getUser();
 
-      if (!sessionData.session?.access_token) {
-        console.error("No access token found");
-        setError("Authentication required");
-        return;
-      }
-
-      try {
-        const res = await fetch(`http://localhost:8000/api/trajet/${id}/`, {
-          headers: {
-            "Authorization": `Bearer ${sessionData.session.access_token}`,
-            "Content-Type": "application/json"
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error("Unauthorized or not found");
-        }
-        
-        const data = await res.json();
-  
-        setFormData({
-          name: data.name,
-          phonenumber: data.phonenumber,
-          price: data.price.toString(),
-          departure: data.departure,
-          arrival: data.arrival,
-          departure_date: data.departure_date.split("T")[0],
-          departure_time: data.departure_date.split("T")[1].slice(0, 5),
-          arrival_date: data.arrival_date.split("T")[0],
-          arrival_time: data.arrival_date.split("T")[1].slice(0, 5),
-          nb_places: data.nb_places.toString(),
-        });
-      } catch (err) {
-        console.error("Error fetching trip:", err);
-        setError("Failed to load trip data");
+      if (supabaseUser) {
+        setUser(supabaseUser);
+      } else {
+        // Redirect if not logged in
+        router.push("/sign-in");
       }
     };
 
-    fetchTrip();
-  }, [id]);
+    fetchUserData();
+  }, [router]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleUpdate = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
+      // Get auth token
       const supabase = createClient();
       const { data } = await supabase.auth.getSession();
-
+      console.log(data)
       if (!data.session?.access_token) {
         throw new Error("Authentication required");
       }
+
+      const token = data.session.access_token;
 
       // Validate that arrival is after departure
       const departureDateTime = new Date(
@@ -121,9 +102,11 @@ export default function EditTrip() {
         return;
       }
 
+      // Format for the API
       const departure_datetime = `${formData.departure_date}T${formData.departure_time}:00Z`;
       const arrival_datetime = `${formData.arrival_date}T${formData.arrival_time}:00Z`;
 
+      // Create data object matching API expectations
       const apiData = {
         name: formData.name,
         phonenumber: formData.phonenumber,
@@ -134,29 +117,42 @@ export default function EditTrip() {
         arrival_date: arrival_datetime,
         nb_places: parseInt(formData.nb_places),
       };
-
-      const response = await fetch(`http://localhost:8000/api/trajet/update/${id}/`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${data.session.access_token}`,
-        },
-        body: JSON.stringify(apiData),
+      
+      // Use the APIClient to make the request
+      const { data: responseData } = await apiClient.post("create-trajet/", {
+        body: apiData,
+        token,
       });
 
-      if (response.ok) {
-        alert("Trip updated successfully!");
-        router.push("/espace-driver");
-      } else {
-        const resData = await response.json();
-        setError(resData.error || "Update failed");
-      }
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      alert("Trip added successfully!");
+      // Reset form
+      setFormData({
+        name: "",
+        phonenumber: "",
+        price: "",
+        departure: "",
+        arrival: "",
+        departure_date: "",
+        departure_time: "10:00",
+        arrival_date: "",
+        arrival_time: "14:00",
+        nb_places: "",
+      });
+      // Navigate to driver dashboard or trips list
+      router.push("/espace-driver/trips");
+    } catch (error) {
+      // Type assertion with a more specific type
+      const apiError = error as ApiError;
+      console.error("Error:", apiError);
+      setError(apiError.message || "Server connection problem.");
     } finally {
       setIsLoading(false);
     }
   };
+  
+  
+      
+  
 
   return (
     <div className="flex justify-center items-center min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white">
@@ -164,13 +160,13 @@ export default function EditTrip() {
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2" />
         <CardHeader className="space-y-1 pb-6 pt-8">
           <div className="flex items-center justify-center mb-2">
-            <PenTool className="h-8 w-8 text-blue-600 mr-2" />
+            <CarFront className="h-8 w-8 text-blue-600 mr-2" />
             <CardTitle className="text-2xl font-bold text-center">
-              Update Your Trip
+              Create a New Trip
             </CardTitle>
           </div>
           <CardDescription className="text-center text-muted-foreground">
-            Modify your journey details for travelers
+            Share your journey and make travel more affordable for everyone
           </CardDescription>
         </CardHeader>
 
@@ -182,7 +178,7 @@ export default function EditTrip() {
             </div>
           )}
 
-          <form className="space-y-6" onSubmit={handleUpdate}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-medium">
@@ -411,7 +407,7 @@ export default function EditTrip() {
             <CardFooter className="px-0 pb-0 pt-4">
               <Button
                 type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-md transition-colors"
+                className="w-full bg-indigo-600  hover:bg-indigo-700 text-white font-medium py-2.5 rounded-md transition-colors"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -436,10 +432,10 @@ export default function EditTrip() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Updating Trip...
+                    Creating Trip...
                   </span>
                 ) : (
-                  "Update Trip"
+                  "Create Trip"
                 )}
               </Button>
             </CardFooter>
