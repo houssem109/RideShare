@@ -5,14 +5,16 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 
 type Reservation = {
-  id: number;
-  trajet_name: string;
-  departure: string;
-  arrival: string;
-  departure_date: string;
-  arrival_date: string;
-  price: string;
-  nb_places: number;
+  id: string;
+  nom: string;
+  prenom: string;
+  tel: string;
+  status: string;
+  payment_method: string;
+  payment_status: string;
+  trajet_ville_depart: string;
+  trajet_ville_arrivee: string;
+  trajet_date: string;
   created_at: string;
 };
 
@@ -24,9 +26,7 @@ export default function HistoriquePage() {
   useEffect(() => {
     const fetchReservations = async () => {
       const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
         router.push("/sign-in");
@@ -35,15 +35,12 @@ export default function HistoriquePage() {
 
       const accessToken = session.access_token;
 
-      const response = await fetch(
-        "http://localhost:8000/api/reservations/history/",
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch("http://localhost:8000/api/reservations/history/", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         console.error("Failed to fetch reservation history");
@@ -70,13 +67,16 @@ export default function HistoriquePage() {
         <ul className="space-y-4">
           {reservations.map((res) => (
             <li key={res.id} className="border p-4 rounded shadow">
-              <p><strong>Trajet:</strong> {res.trajet_name}</p>
-              <p><strong>De:</strong> {res.departure} → {res.arrival}</p>
-              <p><strong>Date départ:</strong> {res.departure_date}</p>
-              <p><strong>Date arrivée:</strong> {res.arrival_date}</p>
-              <p><strong>Prix:</strong> {res.price} TND</p>
-              <p><strong>Places réservées:</strong> {res.nb_places}</p>
-              <p className="text-sm text-gray-500">Réservé le {new Date(res.created_at).toLocaleDateString()}</p>
+              <p><strong>Nom:</strong> {res.nom} {res.prenom}</p>
+              <p><strong>Téléphone:</strong> {res.tel}</p>
+              <p><strong>Trajet:</strong> {res.trajet_ville_depart} → {res.trajet_ville_arrivee}</p>
+              <p><strong>Date de départ:</strong> {new Date(res.trajet_date).toLocaleString()}</p>
+              <p><strong>Statut:</strong> {res.status}</p>
+              <p><strong>Méthode de paiement:</strong> {res.payment_method}</p>
+              <p><strong>Statut du paiement:</strong> {res.payment_status}</p>
+              <p className="text-sm text-gray-500">
+                Réservé le {new Date(res.created_at).toLocaleDateString()}
+              </p>
             </li>
           ))}
         </ul>
@@ -84,3 +84,4 @@ export default function HistoriquePage() {
     </div>
   );
 }
+
