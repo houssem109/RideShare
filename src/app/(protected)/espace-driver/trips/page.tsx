@@ -25,6 +25,7 @@ import { apiClient } from "@/lib/axios";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import PassengerDialog from "./_components/PassengerDialog";
+import { apiVoiture } from "@/lib/constants";
 
 // Updated interface based on your actual API response
 interface DriverTrip {
@@ -57,6 +58,26 @@ interface Passenger {
   phonenumber: string;
   status: "pending" | "confirmed" | "rejected";
 }
+ const getImageUrl = (imagePath: string | null) => {
+    if (!imagePath) return null;
+    
+    // If the image path already includes http, use it as is
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    
+    // Remove any leading slash if present
+    const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+    
+    // Check if the path already includes 'voitures/'
+    if (cleanPath.startsWith('voitures/')) {
+      return `http://localhost:8000/${cleanPath}`;
+    }
+    
+    // Otherwise, assume it's a direct filename in the voitures directory
+    return `http://localhost:8000/voitures/${cleanPath}`;
+  };
+  
 const Page = () => {
   const [trips, setTrips] = useState<DriverTrip[]>([]);
   const [loading, setLoading] = useState(true);
@@ -299,7 +320,7 @@ const Page = () => {
                 <div className="relative">
                   {/* Use the car image from API if available */}
                   <Image
-                    src={trip.voiture_details?.image || "/opel.jpg"}
+                    src={ "/opel.jpg"}
                     alt={`Trip from ${trip.departure} to ${trip.arrival}`}
                     className="w-full h-48 object-cover"
                     width={400}
