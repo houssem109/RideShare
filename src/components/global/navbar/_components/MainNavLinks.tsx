@@ -62,7 +62,7 @@ export function MainNavLinks({ isDriverMode, currentPath, isLoggedIn }: MainNavL
                 My Bookings
               </Link>
               <Link 
-                href="/espace-client/profile" 
+                href="/profile" 
                 className={`text-sm font-medium transition-colors hover:text-primary ${currentPath === '/espace-client/profile' ? 'text-primary' : ''}`}
               >
                 Profile
