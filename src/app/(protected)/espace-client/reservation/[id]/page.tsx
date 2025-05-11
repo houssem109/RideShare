@@ -1,137 +1,128 @@
-'use client';
+"use client";
 
-import { useState, FormEvent } from 'react';
-import axios from 'axios';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import ReservationForm from '@/components/reservation/ReservationForm';
+import { createClient } from "@/utils/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
 
-interface FormData {
-  nom: string;
-  prenom: string;
-  tel: string;
-  adresse: string;
-  trajet_id: number;
-  passenger_id: number;
-}
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ReservationPage() {
-  const { id } = useParams(); 
-  const [formData, setFormData] = useState<FormData>({
-    nom: '',
-    prenom: '',
-    tel: '',
-    adresse: '',
-    trajet_id:3, 
-    passenger_id:1, 
-  });
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Debug log to check the ID value
+  useEffect(() => {
+    console.log('Reservation page loaded with trip ID:', id);
+  }, [id]);
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Check authentication
+        const supabase = createClient();
+        const { data } = await supabase.auth.getSession();
+        
+        if (!data.session) {
+          // Redirect to login if not authenticated
+          window.location.href = `/sign-in?redirect=/espace-client/reservation/${id}`;
+          return;
+        }
+        
+        setIsAuthenticated(true);
+      } catch (err) {
+        console.error("Auth check error:", err);
+        setError("An error occurred while checking authentication. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, [id]);
+  
+  // Handle going back
+  const handleGoBack = () => {
+    window.history.back();
   };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-    setIsSubmitting(true);
-
-    try {
-      const response = await axios.post('http://localhost:8000/api/reservations/creer/', formData);
-      setSuccess('Réservation créée avec succès !');
-      setFormData({
-        nom: '',
-        prenom: '',
-        tel: '',
-        adresse: '',
-        trajet_id: 3, // Reset to default value for testing
-        passenger_id: 1, // Reset to default value for testing
-      });
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Une erreur est survenue lors de la création de la réservation.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+  
+  if (isLoading) {
+    return (
+      <div className="container mx-auto max-w-md p-4 mt-8">
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-20 w-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
+  if (error || !isAuthenticated) {
+    return (
+      <div className="container mx-auto max-w-md p-4 mt-8">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-red-500 mb-4">
+              {error || "You need to be logged in to make a reservation."}
+            </div>
+            <Button variant="outline" onClick={handleGoBack}>
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
   return (
-    <div className="max-w-lg mx-auto p-6 bg-white shadow-md rounded-lg mt-10">
-      <h2 className="text-2xl font-bold text-center mb-6">Formulaire de Réservation</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="nom" className="block text-sm font-medium text-gray-700">
-            Nom
-          </label>
-          <input
-            type="text"
-            id="nom"
-            name="nom"
-            value={formData.nom}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          />
-        </div>
-        <div>
-          <label htmlFor="prenom" className="block text-sm font-medium text-gray-700">
-            Prénom
-          </label>
-          <input
-            type="text"
-            id="prenom"
-            name="prenom"
-            value={formData.prenom}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          />
-        </div>
-        <div>
-          <label htmlFor="tel" className="block text-sm font-medium text-gray-700">
-            Téléphone
-          </label>
-          <input
-            type="tel"
-            id="tel"
-            name="tel"
-            value={formData.tel}
-            onChange={handleChange}
-            required
-            pattern="[0-9]{8}"
-            title="Le numéro de téléphone doit contenir 8 chiffres."
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          />
-        </div>
-        <div>
-          <label htmlFor="adresse" className="block text-sm font-medium text-gray-700">
-            Adresse
-          </label>
-          <input
-            type="text"
-            id="adresse"
-            name="adresse"
-            value={formData.adresse}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          />
-        </div>
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        {success && <p className="text-green-500 text-sm">{success}</p>}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-            isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+    <div className="container mx-auto p-4 mt-8">
+      <div className="mb-6">
+        <Button 
+          variant="ghost" 
+          onClick={handleGoBack}
+          className="text-gray-600 flex items-center"
         >
-          {isSubmitting ? 'Envoi en cours...' : 'Créer la Réservation'}
-        </button>
-      </form>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour
+        </Button>
+      </div>
+      
+      {/* Make sure id exists and is properly passed as a number */}
+      {id ? (
+        <ReservationForm trajetId={Number(id)} />
+      ) : (
+        <div className="p-6 text-center bg-red-50 rounded-lg border border-red-100">
+          <p className="text-red-600">Error: Trip ID is missing. Please return to the trips page and try again.</p>
+          <Button 
+            variant="outline" 
+            onClick={() => window.location.href = '/trajectory'}
+            className="mt-4"
+          >
+            Return to Trips
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

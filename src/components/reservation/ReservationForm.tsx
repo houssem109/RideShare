@@ -1,39 +1,44 @@
-// src/components/reservation/ReservationForm.tsx
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, FormEvent, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from "@/utils/supabase/client";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardFooter 
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-import StripeWrapper from "@/components/payment/StripeWrapper";
-import { createClient } from "@/utils/supabase/client";
-import { apiClient } from "@/lib/axios";
-
+import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { 
+  CreditCard, 
+  Banknote, 
+  Calendar, 
+  MapPin, 
+  User, 
+  Phone, 
+  Home, 
+  ArrowRight, 
+  Clock 
+} from "lucide-react";
+
 interface ReservationFormProps {
   trajetId: number;
-  price: number;
-  tripDetails: {
-    departure: string;
-    arrival: string;
-    departureDate: string;
-    driverName: string;
-  };
 }
 
-export default function ReservationForm({
-  trajetId,
-  price,
-  tripDetails,
-}: ReservationFormProps) {
+export default function ReservationForm({ trajetId }: ReservationFormProps) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [tripDetails, setTripDetails] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     nom: "",
@@ -41,7 +46,37 @@ export default function ReservationForm({
     tel: "",
     adresse: "",
   });
-  
+
+  // Fetch trip details on component mount
+  useEffect(() => {
+    const fetchTripDetails = async () => {
+      try {
+        // Make sure trajetId is valid before making the request
+        if (!trajetId) {
+          throw new Error('Trip ID is undefined');
+        }
+        
+        console.log('Fetching trip details for ID:', trajetId);
+        const response = await fetch(`http://localhost:8000/api/trajets/${trajetId}/`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch trip details');
+        }
+        
+        const data = await response.json();
+        console.log('Trip details received:', data);
+        setTripDetails(data);
+      } catch (error) {
+        console.error('Error fetching trip details:', error);
+        setError('Could not load trip details. Please try again later.');
+      }
+    };
+
+    if (trajetId) {
+      fetchTripDetails();
+    }
+  }, [trajetId]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -49,217 +84,317 @@ export default function ReservationForm({
       [name]: value,
     });
   };
-  
+
   const handleNextStep = () => {
     if (step === 1) {
       // Validate form
       if (!formData.nom || !formData.prenom || !formData.tel) {
-        setError("Veuillez remplir tous les champs obligatoires");
+        setError("Please fill in all required fields");
         return;
       }
       setError(null);
       setStep(2);
     }
   };
-  
+
   const handlePreviousStep = () => {
     setStep(1);
   };
-  
-  const handleSubmitReservation = async () => {
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
     try {
-      setIsLoading(true);
-      setError(null);
-      
+      // Validate trajetId
+      if (!trajetId) {
+        throw new Error('Trip ID is missing. Please try again.');
+      }
+
+      // Get auth token
       const supabase = createClient();
       const { data } = await supabase.auth.getSession();
       
       if (!data.session?.access_token) {
-        throw new Error("Authentication required");
+        throw new Error('Authentication required');
       }
-      
-      // Create reservation with cash payment
-      const response = await apiClient.post("reservations/", {
-        body: {
-          trajet_id: trajetId,
-          nom: formData.nom,
-          prenom: formData.prenom,
-          tel: formData.tel,
-          adresse: formData.adresse || "",
-          payment_method: "cash",
+
+      // Create reservation data
+      const reservationData = {
+        trajet_id: Number(trajetId), // Ensure it's a number
+        passenger_id: data.session.user.id,
+        nom: formData.nom,
+        prenom: formData.prenom,
+        tel: formData.tel,
+        adresse: formData.adresse || "",
+        payment_method: paymentMethod,
+        notes: "",
+      };
+
+      console.log('Sending reservation data:', reservationData);
+
+      // Make API request to create reservation
+      const response = await fetch('http://localhost:8000/api/reservations/creer/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${data.session.access_token}`
         },
-        token: data.session.access_token,
+        body: JSON.stringify(reservationData),
       });
-      
-      // Redirect to success page
-      router.push(`/reservation-success?id=${response.data.id}`);
-      
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create reservation');
+      }
+
+      // Handle success - redirect to confirmation page
+      router.push('/reservation-success');
     } catch (err: any) {
-      setError(err.message || "Failed to create reservation");
+      console.error('Error creating reservation:', err);
+      setError(err.message || 'An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
-  
-  const handlePaymentSuccess = () => {
-    router.push(`/reservation-success`);
+
+  // Trip details for display purposes if real data isn't loaded yet
+  const displayTripDetails = tripDetails || {
+    departure: "Loading...",
+    arrival: "Loading...",
+    departure_date: new Date().toISOString(),
+    price: "...",
+    name: "Loading..."
   };
   
+  // Show loading state or error if trip details aren't available yet
+  useEffect(() => {
+    if (!tripDetails && !error) {
+      console.log('Waiting for trip details to load...');
+    }
+  }, [tripDetails, error]);
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>
-          {step === 1 
-            ? "Détails de réservation" 
-            : "Méthode de paiement"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {step === 1 ? (
-          <div className="space-y-6">
-            <div className="p-4 bg-gray-50 rounded-md mb-4">
-              <h3 className="font-medium mb-2">Détails du trajet</h3>
-              <p className="text-sm">
-                <span className="font-medium">De:</span> {tripDetails.departure}
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">À:</span> {tripDetails.arrival}
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">Date:</span> {new Date(tripDetails.departureDate).toLocaleString()}
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">Conducteur:</span> {tripDetails.driverName}
-              </p>
-              <p className="text-sm font-medium mt-2">
-                Prix: {price.toFixed(2)} TND
-              </p>
+    <div className="max-w-md mx-auto p-4">
+      <Card className="border-0 shadow-lg overflow-hidden">
+        <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+        
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-bold text-center text-gray-800">
+            {step === 1 ? "Reservation Details" : "Payment Method"}
+          </CardTitle>
+          <CardDescription className="text-center text-gray-600">
+            {step === 1 
+              ? "Complete your personal information" 
+              : "Choose your preferred payment method"}
+          </CardDescription>
+        </CardHeader>
+
+        {/* Trip Details Banner */}
+        <div className="bg-indigo-50 p-4 mx-4 rounded-lg mb-6">
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center">
+              <MapPin className="h-4 w-4 text-indigo-600 mr-1" />
+              <span className="font-medium text-indigo-900">{displayTripDetails.departure}</span>
             </div>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nom">Nom *</Label>
-                  <Input
-                    id="nom"
-                    name="nom"
-                    value={formData.nom}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prenom">Prénom *</Label>
-                  <Input
-                    id="prenom"
-                    name="prenom"
-                    value={formData.prenom}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="tel">Téléphone *</Label>
-                <Input
-                  id="tel"
-                  name="tel"
-                  type="tel"
-                  value={formData.tel}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="adresse">Adresse</Label>
-                <Input
-                  id="adresse"
-                  name="adresse"
-                  value={formData.adresse}
-                  onChange={handleInputChange}
-                />
-              </div>
+            <ArrowRight className="h-4 w-4 text-indigo-400" />
+            <div className="flex items-center">
+              <MapPin className="h-4 w-4 text-indigo-600 mr-1" />
+              <span className="font-medium text-indigo-900">{displayTripDetails.arrival}</span>
             </div>
-            
-            {error && (
-              <div className="p-3 text-sm bg-red-50 text-red-600 rounded-md">
-                {error}
-              </div>
-            )}
-            
-            <Button 
-              onClick={handleNextStep}
-              className="w-full"
-            >
-              Continuer
-            </Button>
           </div>
-        ) : (
-          <div className="space-y-6">
-            <RadioGroup 
-              value={paymentMethod}
-              onValueChange={setPaymentMethod}
-              className="space-y-4"
-            >
-              <div className="flex items-center space-x-2 border p-4 rounded-md">
-                <RadioGroupItem value="cash" id="cash" />
-                <Label htmlFor="cash" className="flex-1 cursor-pointer">
-                  Paiement en espèces
-                  <p className="text-sm text-gray-500">
-                    Payer en espèces au conducteur lors du trajet
-                  </p>
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-2 border p-4 rounded-md">
-                <RadioGroupItem value="online" id="online" />
-                <Label htmlFor="online" className="flex-1 cursor-pointer">
-                  Paiement en ligne
-                  <p className="text-sm text-gray-500">
-                    Payer maintenant par carte bancaire
-                  </p>
-                </Label>
-              </div>
-            </RadioGroup>
-            
-            {paymentMethod === "online" ? (
-              <div className="mt-6">
-                <StripeWrapper
-                  trajetId={trajetId}
-                  price={price}
-                  onSuccess={handlePaymentSuccess}
-                  onCancel={handlePreviousStep}
-                />
+          <div className="flex justify-between text-sm text-gray-600">
+            <div className="flex items-center">
+              <Calendar className="h-3 w-3 mr-1" />
+              <span>{formatDate(displayTripDetails.departure_date)}</span>
+            </div>
+            <div className="flex items-center font-medium">
+              <span className="text-indigo-600">{displayTripDetails.price} TND</span>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            {step === 1 ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nom" className="text-sm font-medium">
+                      Last Name <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="nom"
+                        name="nom"
+                        value={formData.nom}
+                        onChange={handleInputChange}
+                        className="pl-9 py-5"
+                        placeholder="Your last name"
+                        required
+                      />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="prenom" className="text-sm font-medium">
+                      First Name <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="prenom"
+                        name="prenom"
+                        value={formData.prenom}
+                        onChange={handleInputChange}
+                        className="pl-9 py-5"
+                        placeholder="Your first name"
+                        required
+                      />
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tel" className="text-sm font-medium">
+                    Phone Number <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="tel"
+                      name="tel"
+                      type="tel"
+                      value={formData.tel}
+                      onChange={handleInputChange}
+                      className="pl-9 py-5"
+                      placeholder="Your phone number"
+                      required
+                    />
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="adresse" className="text-sm font-medium">
+                    Address
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="adresse"
+                      name="adresse"
+                      value={formData.adresse}
+                      onChange={handleInputChange}
+                      className="pl-9 py-5"
+                      placeholder="Your address (optional)"
+                    />
+                    <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="flex space-x-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={handlePreviousStep}
-                  disabled={isLoading}
+              <div className="space-y-6">
+                <h3 className="font-medium text-gray-700">Payment Method</h3>
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={setPaymentMethod}
+                  className="space-y-4"
                 >
-                  Retour
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={handleSubmitReservation}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Traitement..." : "Confirmer la réservation"}
-                </Button>
+                  <div className={`flex items-center space-x-3 p-4 rounded-lg border transition-colors ${paymentMethod === 'cash' ? 'border-indigo-200 bg-indigo-50' : 'border-gray-200'}`}>
+                    <RadioGroupItem value="cash" id="cash" />
+                    <Label htmlFor="cash" className="flex flex-1 cursor-pointer">
+                      <div className="mr-3">
+                        <Banknote className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <div className="font-medium">Cash Payment</div>
+                        <p className="text-sm text-gray-500">
+                          Pay directly to the driver during the trip
+                        </p>
+                      </div>
+                    </Label>
+                  </div>
+
+                  <div className={`flex items-center space-x-3 p-4 rounded-lg border transition-colors ${paymentMethod === 'online' ? 'border-indigo-200 bg-indigo-50' : 'border-gray-200'}`}>
+                    <RadioGroupItem value="online" id="online" />
+                    <Label htmlFor="online" className="flex flex-1 cursor-pointer">
+                      <div className="mr-3">
+                        <CreditCard className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="font-medium">Online Payment</div>
+                        <p className="text-sm text-gray-500">
+                          Pay now by credit card or mobile payment
+                        </p>
+                      </div>
+                    </Label>
+                  </div>
+                </RadioGroup>
+
+                {paymentMethod === 'online' && (
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <p className="text-sm text-blue-700">
+                      You will be redirected to our secure payment interface after confirmation.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
-            
+
             {error && (
-              <div className="p-3 text-sm bg-red-50 text-red-600 rounded-md">
+              <div className="p-3 text-sm bg-red-50 text-red-600 rounded-md border border-red-100">
                 {error}
               </div>
             )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          </CardContent>
+
+          <CardFooter className="flex justify-between py-6">
+            {step === 1 ? (
+              <Button
+                type="button"
+                onClick={handleNextStep}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                Continue
+              </Button>
+            ) : (
+              <div className="flex w-full gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePreviousStep}
+                  className="flex-1"
+                >
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Processing..." : "Confirm"}
+                </Button>
+              </div>
+            )}
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   );
 }
