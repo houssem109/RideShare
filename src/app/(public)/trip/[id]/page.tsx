@@ -211,7 +211,7 @@ export default function TripDetailsPage() {
             <CardTitle>Trip Not Found</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-center">The trip you're looking for doesn't exist or has been removed.</p>
+            <p className="text-center">The trip you&lsquo;re looking for doesn&lsquo;t exist or has been removed.</p>
           </CardContent>
           <CardFooter className="justify-center">
             <Button variant="outline" onClick={() => window.history.back()}>

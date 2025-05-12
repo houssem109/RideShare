@@ -1,7 +1,6 @@
-
 "use client";
 import React, { useState, useEffect } from "react";
-import { MapPin, Clock, Users, ChevronLeft, ChevronRight, Plus, Edit, Trash2, Check, X } from "lucide-react";
+import { MapPin, Clock, Users, ChevronLeft, ChevronRight, Plus, Edit, Trash2, Check, X, ExternalLink } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -22,6 +21,7 @@ import Image from "next/image";
 import { apiClient } from "@/lib/axios";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
 
 // Updated interface based on your actual API response
 interface DriverTrip {
@@ -106,6 +106,7 @@ const PassengerDialog: React.FC<{
   setPassengers: React.Dispatch<React.SetStateAction<Passenger[]>>;
 }> = ({ isOpen, onClose, tripId, passengers, setPassengers }) => {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleUpdateStatus = async (passengerId: number, newStatus: "confirmed" | "rejected") => {
     try {
@@ -143,6 +144,14 @@ const PassengerDialog: React.FC<{
     }
   };
 
+  // Function to view user profile
+  const viewUserProfile = (passengerId: number) => {
+    // Close the current dialog
+    onClose();
+    // Navigate to the user profile page
+    router.push(`/profil/${passengerId}`);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -164,14 +173,20 @@ const PassengerDialog: React.FC<{
               {staticPassengers.map((passenger) => (
                 <div
                   key={passenger.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
+                  <div 
+                    className="flex items-center gap-3 cursor-pointer"
+                    onClick={() => viewUserProfile(passenger.id)}
+                  >
                     <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
                       {passenger.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <div className="font-medium">{passenger.name}</div>
+                      <div className="font-medium flex items-center">
+                        {passenger.name}
+                        <ExternalLink className="h-3 w-3 ml-1 text-gray-400" />
+                      </div>
                       <div className="text-sm text-gray-500">
                         {passenger.phonenumber}
                       </div>
@@ -214,4 +229,5 @@ const PassengerDialog: React.FC<{
     </Dialog>
   );
 };
+
 export default PassengerDialog;
