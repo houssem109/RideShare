@@ -468,7 +468,7 @@ export default function DriverDashboard() {
                     <div className="w-full md:w-1/3 bg-gray-100 rounded-lg overflow-hidden">
                       {stats.vehicle.image ? (
                         <img
-                          src={stats.vehicle.image}
+                          src={"http:/localhost:8000/"+stats.vehicle.image}
                           alt={stats.vehicle.model}
                           className="w-full h-48 object-cover"
                         />

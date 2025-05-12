@@ -1,3 +1,4 @@
+// Updated ReservationForm component with user data pre-filled
 "use client";
 
 import { useState, FormEvent, useEffect } from 'react';
@@ -25,7 +26,8 @@ import {
   Phone, 
   Home, 
   ArrowRight, 
-  Clock 
+  Clock, 
+  Loader2
 } from "lucide-react";
 
 interface ReservationFormProps {
@@ -39,6 +41,7 @@ export default function ReservationForm({ trajetId }: ReservationFormProps) {
   const [step, setStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [tripDetails, setTripDetails] = useState<any>(null);
+  const [loadingUserData, setLoadingUserData] = useState(true);
   
   const [formData, setFormData] = useState({
     nom: "",
@@ -47,34 +50,63 @@ export default function ReservationForm({ trajetId }: ReservationFormProps) {
     adresse: "",
   });
 
-  // Fetch trip details on component mount
+  // Fetch user data and trip details on component mount
   useEffect(() => {
-    const fetchTripDetails = async () => {
+    const fetchUserAndTripData = async () => {
       try {
-        // Make sure trajetId is valid before making the request
-        if (!trajetId) {
-          throw new Error('Trip ID is undefined');
+        setLoadingUserData(true);
+        const supabase = createClient();
+        
+        // Get user session and profile data
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Get user profile from the profiles table
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+          if (profileData) {
+            // Pre-fill form data with user profile information
+            setFormData({
+              nom: profileData.last_name || user.user_metadata?.last_name || "",
+              prenom: profileData.first_name || user.user_metadata?.first_name || "",
+              tel: profileData.phone_number || user.user_metadata?.phone || "",
+              adresse: "", // Keep address empty as required
+            });
+          } else {
+            // If no profile, try to use metadata from auth
+            setFormData({
+              nom: user.user_metadata?.last_name || "",
+              prenom: user.user_metadata?.first_name || "",
+              tel: user.user_metadata?.phone || "",
+              adresse: "",
+            });
+          }
         }
         
-        console.log('Fetching trip details for ID:', trajetId);
-        const response = await fetch(`http://localhost:8000/api/trajets/${trajetId}/`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch trip details');
+        // Fetch trip details
+        if (trajetId) {
+          const response = await fetch(`http://localhost:8000/api/trajets/${trajetId}/`);
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch trip details');
+          }
+          
+          const data = await response.json();
+          setTripDetails(data);
         }
-        
-        const data = await response.json();
-        console.log('Trip details received:', data);
-        setTripDetails(data);
       } catch (error) {
-        console.error('Error fetching trip details:', error);
-        setError('Could not load trip details. Please try again later.');
+        console.error('Error fetching user or trip data:', error);
+        setError('Could not load user or trip details. Please try again later.');
+      } finally {
+        setLoadingUserData(false);
       }
     };
 
-    if (trajetId) {
-      fetchTripDetails();
-    }
+    fetchUserAndTripData();
   }, [trajetId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,22 +191,6 @@ export default function ReservationForm({ trajetId }: ReservationFormProps) {
     }
   };
 
-  // Trip details for display purposes if real data isn't loaded yet
-  const displayTripDetails = tripDetails || {
-    departure: "Loading...",
-    arrival: "Loading...",
-    departure_date: new Date().toISOString(),
-    price: "...",
-    name: "Loading..."
-  };
-  
-  // Show loading state or error if trip details aren't available yet
-  useEffect(() => {
-    if (!tripDetails && !error) {
-      console.log('Waiting for trip details to load...');
-    }
-  }, [tripDetails, error]);
-
   // Format date for display
   const formatDate = (dateString: string) => {
     try {
@@ -191,6 +207,19 @@ export default function ReservationForm({ trajetId }: ReservationFormProps) {
     }
   };
 
+  if (loadingUserData) {
+    return (
+      <div className="max-w-md mx-auto p-4 flex items-center justify-center">
+        <Card className="w-full text-center p-6">
+          <div className="flex justify-center my-6">
+            <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+          </div>
+          <p className="text-gray-600">Loading your information...</p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-md mx-auto p-4">
       <Card className="border-0 shadow-lg overflow-hidden">
@@ -202,7 +231,7 @@ export default function ReservationForm({ trajetId }: ReservationFormProps) {
           </CardTitle>
           <CardDescription className="text-center text-gray-600">
             {step === 1 
-              ? "Complete your personal information" 
+              ? "Verify or update your personal information" 
               : "Choose your preferred payment method"}
           </CardDescription>
         </CardHeader>
@@ -212,21 +241,33 @@ export default function ReservationForm({ trajetId }: ReservationFormProps) {
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center">
               <MapPin className="h-4 w-4 text-indigo-600 mr-1" />
-              <span className="font-medium text-indigo-900">{displayTripDetails.departure}</span>
+              <span className="font-medium text-indigo-900">
+                {tripDetails?.departure || "Loading..."}
+              </span>
             </div>
             <ArrowRight className="h-4 w-4 text-indigo-400" />
             <div className="flex items-center">
               <MapPin className="h-4 w-4 text-indigo-600 mr-1" />
-              <span className="font-medium text-indigo-900">{displayTripDetails.arrival}</span>
+              <span className="font-medium text-indigo-900">
+                {tripDetails?.arrival || "Loading..."}
+              </span>
             </div>
           </div>
           <div className="flex justify-between text-sm text-gray-600">
             <div className="flex items-center">
               <Calendar className="h-3 w-3 mr-1" />
-              <span>{formatDate(displayTripDetails.departure_date)}</span>
+              <span>
+                {tripDetails?.departure_date 
+                  ? formatDate(tripDetails.departure_date) 
+                  : "Loading..."}
+              </span>
             </div>
             <div className="flex items-center font-medium">
-              <span className="text-indigo-600">{displayTripDetails.price} TND</span>
+              <span className="text-indigo-600">
+                {tripDetails?.price 
+                  ? `${tripDetails.price} TND` 
+                  : "..."}
+              </span>
             </div>
           </div>
         </div>
@@ -388,7 +429,14 @@ export default function ReservationForm({ trajetId }: ReservationFormProps) {
                   className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Processing..." : "Confirm"}
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Processing...
+                    </div>
+                  ) : (
+                    "Confirm"
+                  )}
                 </Button>
               </div>
             )}
