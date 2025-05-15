@@ -429,25 +429,9 @@ const Page = () => {
           {/* Passenger Dialog */}
           {selectedTripId && (
            <PassengerDialog
-           isOpen={passengerDialogOpen}
-           onClose={() => setPassengerDialogOpen(false)}
-           tripId={selectedTripId}
-           passengers={tripPassengers}
-           setPassengers={(newPassengers) => {
-             // Update the local tripPassengers state
-             setTripPassengers(newPassengers);
-             
-             // Also update the main trips state to keep everything in sync
-             if (selectedTripId) {
-               setTrips(prevTrips => 
-                 prevTrips.map(trip => 
-                   trip.id === selectedTripId 
-                     ? { ...trip, passengers: newPassengers } 
-                     : trip
-                 )
-               );
-             }
-           }}
+            isOpen={passengerDialogOpen}
+    onClose={() => setPassengerDialogOpen(false)}
+    tripId={selectedTripId}
          />
           )}
         </>
