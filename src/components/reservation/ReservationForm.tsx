@@ -96,6 +96,13 @@ export default function ReservationForm({ trajetId }: ReservationFormProps) {
           }
           
           const data = await response.json();
+          const availableSeats = data.nb_places - (data.reserved_seats || 0);
+        
+        if (availableSeats <= 0) {
+          setError("No seats available for this trip");
+          // You can also disable form submission here
+          // setIsFormDisabled(true); // You would need to add this state variable
+        }
           setTripDetails(data);
         }
       } catch (error) {
@@ -133,6 +140,9 @@ export default function ReservationForm({ trajetId }: ReservationFormProps) {
     setStep(1);
   };
 
+// In src/components/reservation/ReservationForm.tsx
+
+// Change this part in the handleSubmit function:
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);

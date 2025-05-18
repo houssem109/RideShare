@@ -56,3 +56,22 @@ export const registerDriver = async (driverData: FormData) => {
     throw error;
   }
 };
+// Add this to src/services/driverService.ts
+
+export const updateVehicle = async (vehicleId: number, vehicleData: FormData) => {
+  try {
+    const headers = await getAuthHeader();
+    
+    const response = await axios.put(`${API_URL}/voitures/${vehicleId}/`, vehicleData, {
+      headers: {
+        ...headers,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error updating vehicle:', error);
+    throw error;
+  }
+};

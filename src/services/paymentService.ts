@@ -3,24 +3,25 @@
 import { apiClient } from "@/lib/axios";
 
 export const createPaymentIntent = async (
-    trajetId: number,
-    token: string
-  ) => {
-    try {
-      console.log("Sending payment intent request:", { trajetId, token });
-      
-      const response = await apiClient.post("create-payment-intent/", {
-        body: { trajet_id: trajetId },
-        token
-      });
-      
-      console.log("Payment intent response:", response.data);
-      return response.data;
-    } catch (error) {
-      console.error("Payment intent error:", error);
-      throw error;
-    }
-  };
+  trajetId: number,
+  token: string
+) => {
+  try {
+    console.log("Sending payment intent request:", { trajet_id: trajetId });
+    
+    // Change this line - don't wrap trajet_id in a 'body' property
+    const response = await apiClient.post("create-payment-intent/", {
+      body: { trajet_id: trajetId },  // This is correct if your apiClient handles it right
+      token
+    });
+    
+    console.log("Payment intent response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Payment intent error:", error);
+    throw error;
+  }
+};
 
 export const getPassengerBookings = async (token: string) => {
   const response = await apiClient.get("passenger-bookings/", {
