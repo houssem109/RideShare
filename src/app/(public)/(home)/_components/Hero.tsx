@@ -48,14 +48,14 @@ export default function Hero({ mounted }: HeroProps) {
               variants={motionVariants.fadeInUp}
             >
               <Link
-                href="/trips"
+                href="/available-rides"
                 className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 transition duration-300 transform hover:scale-105"
               >
                 <span className="mr-2">Find a Ride</span>
                 <RightFlesh />
               </Link>
               <Link
-                href="/add-trajectory"
+                href="/espace-driver/add-trip"
                 className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition duration-300 transform hover:scale-105"
               >
                 <span className="flex items-center">

@@ -50,7 +50,14 @@ export function UserDropdown({ user, isDriver, currentPath = '' }: UserDropdownP
                 <span>profile</span>
               </Link>
             </DropdownMenuItem>
-            
+            {isDriver && (
+              <DropdownMenuItem asChild>
+                <Link href="/espace-driver/update-vehicle" className="flex items-center">
+                  <Car className="mr-2 h-4 w-4" />
+                  <span>Update Vehicle</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
            
             
             

@@ -75,27 +75,15 @@ export function MobileNavLinks({
             ) : (
               /* Client mode links */
               <>
+                
                 <Link
-                  href="/espace-client"
-                  className={`block text-sm font-medium transition-colors hover:text-primary ${currentPath === '/espace-client' ? 'text-primary' : ''}`}
+                  href="/espace-client/reservation-history"
+                  className={`block text-sm font-medium transition-colors hover:text-primary ${currentPath === '/espace-client/reservation-history' ? 'text-primary' : ''}`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Client Dashboard
+                   Reservation History
                 </Link>
-                <Link
-                  href="/espace-client/bookings"
-                  className={`block text-sm font-medium transition-colors hover:text-primary ${currentPath === '/espace-client/bookings' ? 'text-primary' : ''}`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  My Bookings
-                </Link>
-                <Link
-                  href="/espace-client/profile"
-                  className={`block text-sm font-medium transition-colors hover:text-primary ${currentPath === '/espace-client/profile' ? 'text-primary' : ''}`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Profile
-                </Link>
+                
               </>
             )}
           </>
