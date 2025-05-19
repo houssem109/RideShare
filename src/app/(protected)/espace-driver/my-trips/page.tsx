@@ -58,26 +58,28 @@ interface Passenger {
   phonenumber: string;
   status: "pending" | "confirmed" | "rejected";
 }
- const getImageUrl = (imagePath: string | null) => {
-    if (!imagePath) return null;
-    
-    // If the image path already includes http, use it as is
-    if (imagePath.startsWith('http')) {
-      return imagePath;
-    }
-    
-    // Remove any leading slash if present
-    const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-    
-    // Check if the path already includes 'voitures/'
-    if (cleanPath.startsWith('voitures/')) {
-      return `http://localhost:8000/${cleanPath}`;
-    }
-    
-    // Otherwise, assume it's a direct filename in the voitures directory
-    return `http://localhost:8000/voitures/${cleanPath}`;
-  };
-  
+const getImageUrl = (imagePath: string | null) => {
+  if (!imagePath) return null;
+
+  // If the image path already includes http, use it as is
+  if (imagePath.startsWith("http")) {
+    return imagePath;
+  }
+
+  // Remove any leading slash if present
+  const cleanPath = imagePath.startsWith("/")
+    ? imagePath.substring(1)
+    : imagePath;
+
+  // Check if the path already includes 'voitures/'
+  if (cleanPath.startsWith("voitures/")) {
+    return `http://localhost:8000/${cleanPath}`;
+  }
+
+  // Otherwise, assume it's a direct filename in the voitures directory
+  return `http://localhost:8000/voitures/${cleanPath}`;
+};
+
 const Page = () => {
   const [trips, setTrips] = useState<DriverTrip[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,8 +160,8 @@ const Page = () => {
 
         // Call the delete API endpoint with authentication
         await apiClient.delete(`user-trajets/${id}/`, {
-        token}
-        );
+          token,
+        });
 
         // Remove trip from state after successful deletion
         setTrips(trips.filter((trip) => trip.id !== id));
@@ -320,7 +322,7 @@ const Page = () => {
                 <div className="relative">
                   {/* Use the car image from API if available */}
                   <Image
-                    src={ "/opel.jpg"}
+                    src={"/opel.jpg"}
                     alt={`Trip from ${trip.departure} to ${trip.arrival}`}
                     className="w-full h-48 object-cover"
                     width={400}
@@ -428,11 +430,11 @@ const Page = () => {
 
           {/* Passenger Dialog */}
           {selectedTripId && (
-           <PassengerDialog
-            isOpen={passengerDialogOpen}
-    onClose={() => setPassengerDialogOpen(false)}
-    tripId={selectedTripId}
-         />
+            <PassengerDialog
+              isOpen={passengerDialogOpen}
+              onClose={() => setPassengerDialogOpen(false)}
+              tripId={selectedTripId}
+            />
           )}
         </>
       )}
