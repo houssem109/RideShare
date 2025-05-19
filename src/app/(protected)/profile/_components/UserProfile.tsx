@@ -135,7 +135,7 @@ export default function UserProfile() {
       
       if (data.account_link) {
         // Redirect to Stripe onboarding
-        window.location.href = data.account_link;
+        window.location.href = "";
       }
       
     } catch (error) {

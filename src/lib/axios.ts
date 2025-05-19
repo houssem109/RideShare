@@ -13,6 +13,7 @@ type ReturnData<T = any> = {
    data: T
    status: number
 }
+
 class APIClient {
    private static headers = {
       "Content-Type": "application/json",
@@ -26,17 +27,37 @@ class APIClient {
 
       if (!response.ok) {
          // Parse the error response and throw a detailed error
-         const errorResponse = await response.json().catch(() => null)
-         throw {
-            status: response.status,
-            data: errorResponse,
-            message:
-               errorResponse?.message || `Error! Status: ${response.status}`,
+         try {
+            const errorResponse = await response.json()
+            throw {
+               status: response.status,
+               data: errorResponse,
+               message: errorResponse?.message || `Error! Status: ${response.status}`,
+            }
+         } catch (parseError) {
+            // If parsing fails, throw a generic error
+            throw {
+               status: response.status,
+               data: null,
+               message: `Error! Status: ${response.status}`,
+            }
          }
       }
 
-      const data = await response.json()
-      return { data, status: response.status }
+      // Handle cases where response might be empty (like DELETE operations)
+      const contentType = response.headers.get("content-type")
+      if (contentType && contentType.includes("application/json")) {
+         try {
+            const data = await response.json()
+            return { data, status: response.status }
+         } catch (error) {
+            // If JSON parsing fails, return empty data object
+            return { data: {} as T, status: response.status }
+         }
+      } else {
+         // For non-JSON responses (like empty responses from DELETE)
+         return { data: {} as T, status: response.status }
+      }
    }
 
    // Helper function to convert query parameters to a query string

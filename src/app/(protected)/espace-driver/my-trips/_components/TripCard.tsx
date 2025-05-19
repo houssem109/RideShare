@@ -105,7 +105,7 @@ const TripCard: React.FC<TripCardProps> = ({
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" className="p-2 h-9 w-9" asChild>
-            <Link href={`/espace-driver/edit-trajectory/${trip.id}`}>
+            <Link href={`/espace-driver/edit-trip/${trip.id}`}>
               <Edit className="h-4 w-4" />
               <span className="sr-only">Edit</span>
             </Link>

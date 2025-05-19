@@ -333,7 +333,7 @@ export default function UpdateVehiclePage() {
                     type="button"
                     variant="outline"
                     onClick={() => fileInputRef.current?.click()}
-                    className="mt-4 mx-auto block"
+                    className="mt-4  mx-auto items-center flex gap-2"
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     Change Image

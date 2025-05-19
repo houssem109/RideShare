@@ -124,6 +124,7 @@ export default function Page() {
         token,
       });
 
+    
       alert("Trip added successfully!");
       // Reset form
       setFormData({
@@ -139,7 +140,7 @@ export default function Page() {
         nb_places: "",
       });
       // Navigate to driver dashboard or trips list
-      router.push("/espace-driver/trips");
+      router.push("/espace-driver/my-trips");
     } catch (error) {
       // Type assertion with a more specific type
       const apiError = error as ApiError;

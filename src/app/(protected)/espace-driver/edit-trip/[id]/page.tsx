@@ -146,7 +146,7 @@ export default function EditTrip() {
 
       if (response.ok) {
         alert("Trip updated successfully!");
-        router.push("/espace-driver/trips");
+        router.push("/espace-driver/my-trips");
       } else {
         const resData = await response.json();
         setError(resData.error || "Update failed");
