@@ -13,7 +13,7 @@ export default function ReservationSuccessPage() {
   // Auto-redirect after countdown
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push('/espace-client');
+      router.push('/espace-client/reservation-history');
     }, countdown * 1000);
     
     const interval = setInterval(() => {
@@ -43,13 +43,13 @@ export default function ReservationSuccessPage() {
         </CardHeader>
         
         <CardContent className="text-center space-y-6">
-          <p className="text-gray-600">
-            Your reservation has been successfully recorded. You'll receive a confirmation email shortly.
+         {/*  <p className="text-gray-600">
+            Your reservation has been successfully recorded. You&apos;ll receive a confirmation email shortly.
           </p>
-          
+           */}
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
             <p className="font-medium text-gray-800">
-              What's next?
+              What&apos;s next?
             </p>
             <p className="text-sm text-gray-600 mt-1">
               You can view your reservation details in your client dashboard.
@@ -63,16 +63,16 @@ export default function ReservationSuccessPage() {
         
         <CardFooter className="flex flex-col space-y-3 pb-8">
           <Button 
-            onClick={() => router.push('/espace-client')}
+            onClick={() => router.push('/espace-client/reservation-history')}
             className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
             <Home className="mr-2 h-4 w-4" />
-            Go to Dashboard
+            Go to reservation history
           </Button>
           
           <Button 
             variant="outline"
-            onClick={() => router.push('/trajectory')}
+            onClick={() => router.push('/available-rides')}
             className="w-full"
           >
             <Search className="mr-2 h-4 w-4" />

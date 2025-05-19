@@ -1,4 +1,3 @@
-// src/app/(protected)/espace-driver/stripe-onboarding/page.tsx
 
 "use client";
 

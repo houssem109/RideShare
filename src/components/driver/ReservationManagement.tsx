@@ -1,7 +1,7 @@
-// src/components/driver/ReservationManagement.tsx
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,14 +34,17 @@ interface ReservationManagementProps {
   showAll?: boolean;
   limit?: number;
   onStatusChange?: () => void;
+  filterStatus?: string; // Add this property to filter by status
 }
 
 export default function ReservationManagement({
   tripId,
   showAll = true,
   limit = 5,
-  onStatusChange
+  onStatusChange,
+  filterStatus = "all" // Default to showing all reservations
 }: ReservationManagementProps) {
+  const router = useRouter();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +52,7 @@ export default function ReservationManagement({
 
   useEffect(() => {
     fetchReservations();
-  }, [tripId]);
+  }, [tripId, filterStatus]); // Add filterStatus dependency to refresh when it changes
 
   const fetchReservations = async () => {
     try {
@@ -67,12 +70,24 @@ export default function ReservationManagement({
       });
 
       // Sort reservations by created_at, most recent first
-      const sortedReservations = data
+      let sortedReservations = data
         .sort((a: Reservation, b: Reservation) => 
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )
-        .slice(0, showAll ? undefined : limit);
-
+        );
+      
+      // Filter by status if specified
+      if (filterStatus !== "all") {
+        sortedReservations = sortedReservations.filter(
+          (res: Reservation) => res.status === filterStatus
+        );
+      }
+      
+      // Apply limit if not showing all
+      if (!showAll && limit) {
+        sortedReservations = sortedReservations.slice(0, limit);
+      }
+      
+      console.log("Fetched reservations:", sortedReservations);
       setReservations(sortedReservations);
     } catch (err: any) {
       console.error("Error fetching reservations:", err);
@@ -150,6 +165,19 @@ export default function ReservationManagement({
     }
   };
 
+  // Navigate to user profile when card is clicked
+  const navigateToUserProfile = (userId: string, event: React.MouseEvent) => {
+    // Don't navigate if clicking on action buttons
+    if (
+      (event.target as HTMLElement).closest('button') ||
+      (event.target as HTMLElement).tagName === 'BUTTON'
+    ) {
+      return;
+    }
+    
+    router.push(`/user-profile/${userId}`);
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -202,7 +230,8 @@ export default function ReservationManagement({
           key={reservation.id} 
           className={`p-4 border rounded-lg transition-colors hover:bg-gray-50 ${
             reservation.status === 'pending' ? 'border-yellow-200 bg-yellow-50 hover:bg-yellow-100/50' : ''
-          }`}
+          } cursor-pointer`}
+          onClick={(e) => navigateToUserProfile(reservation.passenger.id, e)}
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -239,7 +268,10 @@ export default function ReservationManagement({
                   size="sm"
                   variant="outline"
                   className="p-1 h-8 w-8 rounded-full text-green-600 border-green-200 hover:bg-green-50"
-                  onClick={() => handleUpdateStatus(reservation.id, 'accepted')}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent navigation
+                    handleUpdateStatus(reservation.id, 'accepted');
+                  }}
                   disabled={updating === reservation.id}
                 >
                   <Check className="h-4 w-4" />
@@ -249,7 +281,10 @@ export default function ReservationManagement({
                   size="sm"
                   variant="outline"
                   className="p-1 h-8 w-8 rounded-full text-red-600 border-red-200 hover:bg-red-50"
-                  onClick={() => handleUpdateStatus(reservation.id, 'rejected')}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent navigation
+                    handleUpdateStatus(reservation.id, 'rejected');
+                  }}
                   disabled={updating === reservation.id}
                 >
                   <X className="h-4 w-4" />

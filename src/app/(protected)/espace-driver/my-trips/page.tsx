@@ -26,72 +26,27 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import PassengerDialog from "./_components/PassengerDialog";
 import { apiVoiture } from "@/lib/constants";
+import { formatDate, formatTime, getImageUrl } from "@/utils/helpers";
+import Pagination from "./_components/Pagination";
+import StatusFilterTabs from "./_components/StatusFilterTabs";
+import TripGrid from "./_components/TripGrid";
+import { DriverTrip } from "@/types/Driver";
+import EmptyState from "./_components/EmptyState";
+import ErrorState from "./_components/ErrorState";
+import LoadingState from "./_components/LoadingState";
 
-// Updated interface based on your actual API response
-interface DriverTrip {
-  id: number;
-  name: string;
-  phonenumber: string;
-  price: string; // Changed to string based on your data
-  departure: string;
-  arrival: string;
-  departure_date: string;
-  arrival_date: string;
-  nb_places: number;
-  status: string;
-  voiture: number; // Changed from voiture_id
-  owner_id: number; // Changed from owner_id_id
-  created_at: string;
-  voiture_details: {
-    car_image_id: string;
-    id_voiture: number;
-    image: string;
-    marque: string;
-    matricule: string;
-  };
-  // We'll compute this since it's not in the API
-  booking_count?: number;
-}
-interface Passenger {
-  id: number;
-  name: string;
-  phonenumber: string;
-  status: "pending" | "confirmed" | "rejected";
-}
-const getImageUrl = (imagePath: string | null) => {
-  if (!imagePath) return null;
 
-  // If the image path already includes http, use it as is
-  if (imagePath.startsWith("http")) {
-    return imagePath;
-  }
-
-  // Remove any leading slash if present
-  const cleanPath = imagePath.startsWith("/")
-    ? imagePath.substring(1)
-    : imagePath;
-
-  // Check if the path already includes 'voitures/'
-  if (cleanPath.startsWith("voitures/")) {
-    return `http://localhost:8000/${cleanPath}`;
-  }
-
-  // Otherwise, assume it's a direct filename in the voitures directory
-  return `http://localhost:8000/voitures/${cleanPath}`;
-};
 
 const Page = () => {
-  const [trips, setTrips] = useState<DriverTrip[]>([]);
+ const [trips, setTrips] = useState<DriverTrip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const tripsPerPage = 6;
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [tripPassengers, setTripPassengers] = useState<Passenger[]>([]);
-
-  // For the passenger dialog
   const [passengerDialogOpen, setPassengerDialogOpen] = useState(false);
   const [selectedTripId, setSelectedTripId] = useState<number | null>(null);
+  
+  const tripsPerPage = 6;
 
   // Open passenger dialog
   const openPassengerDialog = (tripId: number) => {
@@ -123,10 +78,9 @@ const Page = () => {
         console.log("Fetched trips:", data);
 
         // Add booking_count to each trip - based on seed data
-        // In the real app, you would get this from the API
         const tripsWithBookings = data.map((trip) => ({
           ...trip,
-          booking_count: Math.floor(Math.random() * trip.nb_places), // Mock data until API provides this
+          booking_count: trip.nb_places - (trip.available_seats ?? 0), // Mock data until API provides this
         }));
 
         setTrips(tripsWithBookings);
@@ -193,48 +147,6 @@ const Page = () => {
   const currentTrips = filteredTrips.slice(indexOfFirstTrip, indexOfLastTrip);
   const totalPages = Math.ceil(filteredTrips.length / tripsPerPage);
 
-  // Format date to time (e.g., "8:30 AM")
-  const formatTime = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
-    } catch (error) {
-      return "Invalid time";
-    }
-  };
-
-  // Format date to display date (e.g., "Apr 15, 2023")
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    } catch (error) {
-      return "Invalid date";
-    }
-  };
-
-  // Get appropriate status badge
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case "completed":
-        return <Badge className="bg-blue-100 text-blue-800">Completed</Badge>;
-      case "cancelled":
-        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
-    }
-  };
-
   return (
     <div className="flex flex-col p-4 md:p-6 bg-gray-50">
       <div className="flex justify-between items-center mb-8">
@@ -248,184 +160,34 @@ const Page = () => {
       </div>
 
       {/* Status Filter Tabs */}
-      <div className="flex mb-6 border-b">
-        <button
-          className={`px-4 py-2 font-medium ${
-            statusFilter === "all"
-              ? "text-indigo-600 border-b-2 border-indigo-600"
-              : "text-gray-600 hover:text-indigo-600"
-          }`}
-          onClick={() => setStatusFilter("all")}
-        >
-          All Trips
-        </button>
-        <button
-          className={`px-4 py-2 font-medium ${
-            statusFilter === "active"
-              ? "text-indigo-600 border-b-2 border-indigo-600"
-              : "text-gray-600 hover:text-indigo-600"
-          }`}
-          onClick={() => setStatusFilter("active")}
-        >
-          Active
-        </button>
-        <button
-          className={`px-4 py-2 font-medium ${
-            statusFilter === "completed"
-              ? "text-indigo-600 border-b-2 border-indigo-600"
-              : "text-gray-600 hover:text-indigo-600"
-          }`}
-          onClick={() => setStatusFilter("completed")}
-        >
-          Completed
-        </button>
-        <button
-          className={`px-4 py-2 font-medium ${
-            statusFilter === "cancelled"
-              ? "text-indigo-600 border-b-2 border-indigo-600"
-              : "text-gray-600 hover:text-indigo-600"
-          }`}
-          onClick={() => setStatusFilter("cancelled")}
-        >
-          Cancelled
-        </button>
-      </div>
+      <StatusFilterTabs 
+        statusFilter={statusFilter} 
+        setStatusFilter={setStatusFilter} 
+      />
 
       {/* Loading, Error and Empty States */}
       {loading ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-            </div>
-            <p className="mt-4 text-gray-600">Loading your trips...</p>
-          </CardContent>
-        </Card>
+        <LoadingState />
       ) : error ? (
-        <Card>
-          <CardContent className="p-8 text-center text-red-500">
-            <p>{error}</p>
-          </CardContent>
-        </Card>
+        <ErrorState message={error} />
       ) : currentTrips.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center text-gray-500">
-            <p>No trips found. Create a new trip to get started.</p>
-          </CardContent>
-        </Card>
+        <EmptyState />
       ) : (
         <>
           {/* Trip Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {currentTrips.map((trip) => (
-              <Card key={trip.id} className="overflow-hidden">
-                <div className="relative">
-                  {/* Use the car image from API if available */}
-                  <Image
-                    src={"/opel.jpg"}
-                    alt={`Trip from ${trip.departure} to ${trip.arrival}`}
-                    className="w-full h-48 object-cover"
-                    width={400}
-                    height={250}
-                  />
-                  <div className="absolute top-2 right-2">
-                    {getStatusBadge(trip.status)}
-                  </div>
-                </div>
-                <CardHeader className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        {trip.departure} → {trip.arrival}
-                      </CardTitle>
-                      <CardDescription>
-                        <span className="flex items-center gap-1 text-sm">
-                          <Clock className="h-3 w-3 mr-1" />{" "}
-                          {formatTime(trip.departure_date)}
-                        </span>
-                        <span className="block text-xs text-gray-500 mt-1">
-                          {formatDate(trip.departure_date)}
-                        </span>
-                      </CardDescription>
-                    </div>
-                    <div className="text-lg font-semibold">{trip.price} DT</div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  <div className="flex justify-between items-center mt-3">
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm text-gray-600">
-                        {trip.booking_count || 0}/{trip.nb_places} seats booked
-                      </span>
-                    </div>
-                    {trip.voiture_details && (
-                      <div className="text-sm text-gray-600">
-                        {trip.voiture_details.marque}{" "}
-                        {trip.voiture_details.matricule}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter className="p-4 pt-0 flex justify-between items-center">
-                  <Button
-                    variant="outline"
-                    className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
-                    onClick={() => openPassengerDialog(trip.id)}
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Passengers
-                  </Button>
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="p-2 h-9 w-9" asChild>
-                      <Link href={`/espace-driver/edit-trajectory/${trip.id}`}>
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Edit</span>
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="p-2 h-9 w-9 border-red-200 text-red-500 hover:bg-red-50"
-                      onClick={() => handleDeleteTrip(trip.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+          <TripGrid 
+            trips={currentTrips} 
+            onDeleteTrip={handleDeleteTrip} 
+            onViewPassengers={openPassengerDialog} 
+          />
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center mt-8">
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-                <span className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            </div>
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           )}
 
           {/* Passenger Dialog */}
@@ -441,5 +203,4 @@ const Page = () => {
     </div>
   );
 };
-
 export default Page;

@@ -33,7 +33,7 @@ export const getImageUrl = (imagePath: string | null) => {
   if (imagePath.startsWith("http")) {
     return imagePath;
   }
-
+console.log("Image path:", imagePath);
   // Remove any leading slash if present
   const cleanPath = imagePath.startsWith("/")
     ? imagePath.substring(1)

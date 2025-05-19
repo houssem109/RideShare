@@ -14,6 +14,7 @@ interface VehicleInfoProps {
 }
 
 export const VehicleInfo: React.FC<VehicleInfoProps> = ({ carDetails }) => {
+    console.log("Car Details:", carDetails);
   return (
     <div>
       <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">

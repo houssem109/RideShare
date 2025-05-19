@@ -8,7 +8,29 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import Link from "next/link";
-import { UserIcon, PhoneIcon, MailIcon, KeyIcon, SaveIcon, LockIcon } from "lucide-react";
+import { 
+  UserIcon, 
+  PhoneIcon, 
+  MailIcon, 
+  KeyIcon, 
+  SaveIcon, 
+  LockIcon,
+  CreditCardIcon,
+  CarIcon,
+  AlertCircleIcon,
+  CheckCircleIcon,
+  ExternalLinkIcon 
+} from "lucide-react";
+import { apiClient } from "@/lib/axios";
+
+interface StripeAccountStatus {
+  hasAccount: boolean;
+  isVerified: boolean;
+  needsOnboarding: boolean;
+  status: string;
+  message: string;
+  accountLink?: string;
+}
 
 export default function UserProfile() {
   const [user, setUser] = useState<User | null>(null);
@@ -19,6 +41,9 @@ export default function UserProfile() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isDriver, setIsDriver] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState<StripeAccountStatus | null>(null);
+  const [checkingStripe, setCheckingStripe] = useState(false);
 
   const supabase = createClient();
 
@@ -27,13 +52,22 @@ export default function UserProfile() {
       try {
         setLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
-        
+        console.log("User data:", user);
         if (user) {
           setUser(user);
           setEmail(user.email || "");
           setFirstName(user.user_metadata?.first_name || "");
           setLastName(user.user_metadata?.last_name || "");
           setPhone(user.user_metadata?.phone || "");
+          
+          // Check if user is a driver (based on their metadata or a separate API call)
+          // This is an example - adjust according to your actual data structure
+          setIsDriver(user.user_metadata?.role=="driver" || false);
+          
+          // If user is a driver, check their Stripe account status
+          if (user.user_metadata?.role=="driver") {
+            checkStripeAccountStatus();
+          }
         }
       } catch (error) {
         console.error("Error loading user:", error);
@@ -44,6 +78,76 @@ export default function UserProfile() {
 
     loadUserProfile();
   }, [supabase.auth]);
+
+  const checkStripeAccountStatus = async () => {
+    try {
+      setCheckingStripe(true);
+      
+      // Get authentication token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("Authentication required");
+      }
+      
+      // Call the API to check Stripe account status
+      const { data } = await apiClient.get("check-stripe-account-status/", {
+        token: session.access_token
+      });
+      console.log("Stripe account status data:", data);
+      setStripeStatus({
+        hasAccount: data.has_account || false,
+        isVerified: data.is_verified || false,
+        status: data.status || "",
+        message: data.message || "",
+        needsOnboarding: !data.has_account || (data.has_account && data.status === "incomplete")
+      });
+      
+    } catch (error) {
+      console.error("Error checking Stripe account status:", error);
+      setStripeStatus({
+        hasAccount: false,
+        isVerified: false,
+        status: "",
+        message: "Unable to retrieve account status",
+        needsOnboarding: true
+      });
+    } finally {
+      setCheckingStripe(false);
+    }
+  };
+
+  const initiateStripeOnboarding = async () => {
+    try {
+      setCheckingStripe(true);
+      
+      // Get authentication token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("Authentication required");
+      }
+      
+      // Call the API to create a Stripe account and get onboarding link
+      const { data } = await apiClient.post("create-stripe-account/", {
+        token: session.access_token
+      });
+      
+      if (data.account_link) {
+        // Redirect to Stripe onboarding
+        window.location.href = data.account_link;
+      }
+      
+    } catch (error) {
+      console.error("Error initiating Stripe onboarding:", error);
+      setMessage({
+        type: "error",
+        text: "Failed to initiate Stripe onboarding. Please try again."
+      });
+    } finally {
+      setCheckingStripe(false);
+    }
+  };
 
   const updateProfile = async () => {
     try {
@@ -122,6 +226,14 @@ export default function UserProfile() {
               <p className="text-muted-foreground flex items-center justify-center sm:justify-start gap-1 mt-1">
                 <PhoneIcon size={16} /> {phone}
               </p>
+            )}
+            {isDriver && (
+              <div className="mt-2">
+                <Badge className="bg-blue-100 text-blue-800 flex items-center gap-1 sm:inline-flex">
+                  <CarIcon size={14} />
+                  Driver
+                </Badge>
+              </div>
             )}
           </div>
         </div>
@@ -277,9 +389,116 @@ export default function UserProfile() {
                 </div>
               </div>
             </div>
+
+            {isDriver && (
+              <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                <div className="flex gap-3">
+                  <div className="bg-primary/10 p-2 rounded-full text-primary h-fit">
+                    <CreditCardIcon size={16} />
+                  </div>
+                  <div className="w-full">
+                    <h3 className="font-medium mb-1">Payment Account</h3>
+                    
+                    {checkingStripe ? (
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="animate-spin h-4 w-4 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
+                        <p className="text-sm text-muted-foreground">
+                          Checking your payment account status...
+                        </p>
+                      </div>
+                    ) : stripeStatus ? (
+                      <>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Status: {
+                            stripeStatus.hasAccount && stripeStatus.isVerified ? (
+                              <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                                <CheckCircleIcon size={16} /> Verified
+                              </span>
+                            ) : stripeStatus.hasAccount && stripeStatus.status === "submitted" ? (
+                              <span className="text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1">
+                                <CheckCircleIcon size={16} /> Submitted
+                              </span>
+                            ) : stripeStatus.hasAccount ? (
+                              <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                                <AlertCircleIcon size={16} /> Incomplete
+                              </span>
+                            ) : (
+                              <span className="text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
+                                <AlertCircleIcon size={16} /> Not connected
+                              </span>
+                            )
+                          }
+                        </p>
+                        
+                        {stripeStatus.hasAccount && stripeStatus.isVerified ? (
+                          <p className="text-sm text-green-600 dark:text-green-400 mb-2">
+                            {stripeStatus.message}
+                          </p>
+                        ) : stripeStatus.hasAccount && stripeStatus.status === "submitted" && !stripeStatus.isVerified ? (
+                          <p className="text-sm text-blue-600 dark:text-blue-400 mb-2">
+                            {stripeStatus.message || "Your application has been submitted and is pending verification."}
+                          </p>
+                        ) : stripeStatus.hasAccount ? (
+                          <div>
+                            <p className="text-sm text-amber-600 dark:text-amber-400 mb-4">
+                              {stripeStatus.message || "Your payment account setup is incomplete. Please complete the onboarding process."}
+                            </p>
+                            <Button 
+                              variant="outline" 
+                              className="gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                              onClick={() => {
+                                if (stripeStatus.accountLink) {
+                                  window.location.href = stripeStatus.accountLink;
+                                } else {
+                                  initiateStripeOnboarding();
+                                }
+                              }}
+                              disabled={checkingStripe}
+                            >
+                              <ExternalLinkIcon size={16} />
+                              Complete Setup
+                            </Button>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Connect your payment account to receive payments from passengers.
+                            </p>
+                            <Button 
+                              variant="outline" 
+                              className="gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                              onClick={initiateStripeOnboarding}
+                              disabled={checkingStripe}
+                            >
+                              <CreditCardIcon size={16} />
+                              Connect Payment Account
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Unable to check payment account status. Please try refreshing the page.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     </div>
+  );
+}
+
+// Badge component for driver status
+import { ReactNode } from "react";
+
+const Badge = ({ children, className = "" }: { children: ReactNode; className?: string }) => {
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
+      {children}
+    </span>
   );
 }

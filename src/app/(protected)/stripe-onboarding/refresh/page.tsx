@@ -1,4 +1,3 @@
-// src/app/(protected)/espace-driver/stripe-onboarding/refresh/page.tsx
 
 "use client";
 
@@ -19,7 +18,7 @@ export default function OnboardingRefreshPage() {
         
         // Redirect back to the main onboarding page
         // This will generate a new link with the existing account
-        router.push("/espace-driver/stripe-onboarding");
+        router.push("/stripe-onboarding");
       } catch (error) {
         console.error("Error refreshing onboarding:", error);
       }
