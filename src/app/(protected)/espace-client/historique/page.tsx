@@ -37,18 +37,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
 
 type Reservation = {
-  id: string;
-  nom: string;
-  prenom: string;
-  tel: string;
-  status: string;
-  payment_method: string;
-  payment_status: string | null;
-  trajet_depart: string;
-  trajet_arrivee: string;
-  trajet_date_depart: string;
-  trajet_date_arrivee: string;
-  created_at: string;
+   id: string;
+   nom: string;
+   prenom: string;
+   tel: string;
+   status: string;
+   payment_method: string;
+   payment_status: string | null;
+   trajet_depart: string;
+   trajet_arrivee: string;
+   trajet_date_depart: string;
+   trajet_date_arrivee: string;
+   trajet_id: number; // Add this line
+   created_at: string;
 };
 
 export default function HistoryPage() {
@@ -86,6 +87,7 @@ export default function HistoryPage() {
 
         const data = await response.json();
         setReservations(data);
+        console.log("Fetched reservations:", data);
       } catch (err: any) {
         console.error("Error fetching history:", err);
         setError(err.message || "An error occurred while loading your reservation history");
