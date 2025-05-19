@@ -48,7 +48,7 @@ type Reservation = {
    trajet_arrivee: string;
    trajet_date_depart: string;
    trajet_date_arrivee: string;
-   trajet_id: number; // Add this line
+   
    created_at: string;
 };
 
@@ -87,7 +87,7 @@ export default function HistoryPage() {
 
         const data = await response.json();
         setReservations(data);
-        console.log("Fetched reservations:", data);
+        
       } catch (err: any) {
         console.error("Error fetching history:", err);
         setError(err.message || "An error occurred while loading your reservation history");

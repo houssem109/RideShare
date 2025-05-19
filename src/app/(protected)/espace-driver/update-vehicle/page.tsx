@@ -260,7 +260,7 @@ export default function UpdateVehiclePage() {
                 required
               />
               <p className="text-sm text-gray-500">
-                Enter your vehicle's license plate number
+                Enter your vehicle&apos;s license plate number
               </p>
             </div>
 
